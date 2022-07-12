@@ -2542,6 +2542,19 @@ page 90023 "Fixed Deposit"
                     CurrPage.CLOSE();
                 end;
             }
+             action(Approvals)
+            {
+                ApplicationArea = all;
+                Image = Approvals;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                 ApprovalsMgmt.OpenApprovalEntriesPage(Rec.RECORDID);
+                    //CurrPage.CLOSE();
+                end;
+            }
             action(ReOpen)
             {
                 Image = ReOpen;

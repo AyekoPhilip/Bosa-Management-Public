@@ -4019,7 +4019,6 @@ report 90042 "Standing Order Register"
                     ProductName := LoanReg."Product Description";
                     LoanReg.CalcFields("Loan Balance");
                     LoanBalance := LoanReg."Loan Balance";
-
                 end;
                 STOFrequency := 'Monthly';
                 if Running = true then begin
@@ -4073,6 +4072,8 @@ report 90042 "Standing Order Register"
         ProductName: Text[100];
         LoanBalance: Decimal;
         STOStatus: Enum "Standing Order Frequency";
+
+        CheckReport: Report Check;
 }
 report 90043 "FOSA Appraisal"
 {
