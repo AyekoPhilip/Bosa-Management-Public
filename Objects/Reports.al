@@ -3507,6 +3507,7 @@ report 90038 "Loan Application"
             column(WitnessIDNo; WitnessRec."National ID No") { }
             column(WitnessDate; WitnessDate) { }
             column(Member_National_ID; Member."National ID No") { }
+            column(Submitted_On; "Submitted On") { }
 
             dataitem("Online Guarantor Requests"; "Online Guarantor Requests")
             {
@@ -3584,6 +3585,8 @@ report 90038 "Loan Application"
                 AccountNo := '';
                 AccountNo := MemberMgt.GetMemberAccount("Member No.", 'FOSA');
                 AccountName := "Member Name";
+                GrossSalary := 0;
+                GrossSalary := LoansManagement.GetGrossAmount("Application No");
             end;
         }
 
@@ -3626,6 +3629,7 @@ report 90038 "Loan Application"
         CompanyInformation: Record "Company Information";
         MemberAge: Integer;
         MemberMgt: Codeunit "Member Management";
+        Portal: Codeunit ThirdPartyIntegrations;
         Check: report Check;
         AmountInWords: array[2] of Text[250];
         LoanProduct: Record "Product Factory";

@@ -608,10 +608,13 @@
                                   <Style>
                                     <FontFamily>Times New Roman</FontFamily>
                                     <FontSize>8pt</FontSize>
+                                    <Format>#,0.00;(#,0.00);'0.00'</Format>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>GrossSalary</rd:DefaultName>
@@ -1064,7 +1067,7 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>8. Members applying for loans above 500,000/= (five hundred thousand) will be required to pay an extra RMF Premium of 1.5%</Value>
+                                  <Value>8. Members applying for loans above 500,000/= (five hundred thousand) will be required to pay an extra RMF Premium of 1.5% before disbursement</Value>
                                   <Style>
                                     <FontStyle>Normal</FontStyle>
                                     <FontFamily>Times New Roman</FontFamily>
@@ -2423,13 +2426,13 @@
                   <Width>5.39728cm</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>2.5cm</Width>
+                  <Width>2.02821cm</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>2.5cm</Width>
+                  <Width>2.00403cm</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>3.23617cm</Width>
+                  <Width>4.20394cm</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>2.5cm</Width>
@@ -2963,7 +2966,8 @@
                           <Sizing>FitProportional</Sizing>
                           <Style>
                             <Border>
-                              <Style>None</Style>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
                             </Border>
                           </Style>
                         </Image>
@@ -3011,7 +3015,7 @@
             <Top>16.134cm</Top>
             <Left>0.00001cm</Left>
             <Height>3.81083cm</Height>
-            <Width>20.39728cm</Width>
+            <Width>20.39729cm</Width>
             <ZIndex>2</ZIndex>
             <Style>
               <Border>
@@ -3085,7 +3089,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox136</rd:DefaultName>
-            <Top>21.569cm</Top>
+            <Top>21.8865cm</Top>
             <Left>0.00001cm</Left>
             <Height>1.11858cm</Height>
             <Width>2.5cm</Width>
@@ -3094,7 +3098,7 @@
               <Border>
                 <Style>None</Style>
               </Border>
-              <VerticalAlign>Bottom</VerticalAlign>
+              <VerticalAlign>Middle</VerticalAlign>
               <PaddingLeft>2pt</PaddingLeft>
               <PaddingRight>2pt</PaddingRight>
               <PaddingTop>2pt</PaddingTop>
@@ -3108,7 +3112,7 @@
               <Paragraph>
                 <TextRuns>
                   <TextRun>
-                    <Value>Date..................................</Value>
+                    <Value>="Date.................................. " &amp; First(Fields!Submitted_On.Value, "DataSet_Result")</Value>
                     <Style>
                       <FontFamily>Times New Roman</FontFamily>
                       <FontSize>8pt</FontSize>
@@ -3119,7 +3123,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox137</rd:DefaultName>
-            <Top>21.569cm</Top>
+            <Top>21.8865cm</Top>
             <Left>9.0873cm</Left>
             <Height>1.11858cm</Height>
             <Width>11.30999cm</Width>
@@ -3128,106 +3132,7 @@
               <Border>
                 <Style>None</Style>
               </Border>
-              <VerticalAlign>Bottom</VerticalAlign>
-              <PaddingLeft>2pt</PaddingLeft>
-              <PaddingRight>2pt</PaddingRight>
-              <PaddingTop>2pt</PaddingTop>
-              <PaddingBottom>2pt</PaddingBottom>
-            </Style>
-          </Textbox>
-          <Textbox Name="Textbox138">
-            <CanGrow>true</CanGrow>
-            <KeepTogether>true</KeepTogether>
-            <Paragraphs>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value>="Witness Name: ........ " &amp; First(Fields!WitnessName.Value, "DataSet_Result") &amp; " ................. "</Value>
-                    <Style>
-                      <FontFamily>Times New Roman</FontFamily>
-                      <FontSize>8pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-            </Paragraphs>
-            <rd:DefaultName>Textbox138</rd:DefaultName>
-            <Top>22.98577cm</Top>
-            <Left>0.00002cm</Left>
-            <Height>0.6cm</Height>
-            <Width>20.39727cm</Width>
-            <ZIndex>6</ZIndex>
-            <Style>
-              <Border>
-                <Style>None</Style>
-              </Border>
-              <PaddingLeft>2pt</PaddingLeft>
-              <PaddingRight>2pt</PaddingRight>
-              <PaddingTop>2pt</PaddingTop>
-              <PaddingBottom>2pt</PaddingBottom>
-            </Style>
-          </Textbox>
-          <Textbox Name="Textbox139">
-            <CanGrow>true</CanGrow>
-            <KeepTogether>true</KeepTogether>
-            <Paragraphs>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value>="Witness ID/No: ........." &amp; First(Fields!WitnessIDNo.Value, "DataSet_Result") &amp; " ........ Date ..............." &amp; First(Fields!WitnessDate.Value, "DataSet_Result") &amp; "  ......"</Value>
-                    <Style>
-                      <FontFamily>Times New Roman</FontFamily>
-                      <FontSize>8pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-            </Paragraphs>
-            <rd:DefaultName>Textbox139</rd:DefaultName>
-            <Top>23.76216cm</Top>
-            <Left>0.00001cm</Left>
-            <Height>0.6cm</Height>
-            <Width>12.75379cm</Width>
-            <ZIndex>7</ZIndex>
-            <Style>
-              <Border>
-                <Style>None</Style>
-              </Border>
-              <PaddingLeft>2pt</PaddingLeft>
-              <PaddingRight>2pt</PaddingRight>
-              <PaddingTop>2pt</PaddingTop>
-              <PaddingBottom>2pt</PaddingBottom>
-            </Style>
-          </Textbox>
-          <Textbox Name="Textbox140">
-            <CanGrow>true</CanGrow>
-            <KeepTogether>true</KeepTogether>
-            <Paragraphs>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value>Signature:....</Value>
-                    <Style>
-                      <FontFamily>Times New Roman</FontFamily>
-                      <FontSize>8pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-            </Paragraphs>
-            <rd:DefaultName>Textbox136</rd:DefaultName>
-            <Top>23.76216cm</Top>
-            <Left>12.7538cm</Left>
-            <Height>0.6cm</Height>
-            <Width>2.5cm</Width>
-            <ZIndex>8</ZIndex>
-            <Style>
-              <Border>
-                <Style>None</Style>
-              </Border>
+              <VerticalAlign>Middle</VerticalAlign>
               <PaddingLeft>2pt</PaddingLeft>
               <PaddingRight>2pt</PaddingRight>
               <PaddingTop>2pt</PaddingTop>
@@ -3407,7 +3312,7 @@
             <Left>0.00001cm</Left>
             <Height>4.55111cm</Height>
             <Width>20.39728cm</Width>
-            <ZIndex>9</ZIndex>
+            <ZIndex>6</ZIndex>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3423,11 +3328,11 @@
             <Value>=First(Fields!MemberSignature.Value, "DataSet_Result")</Value>
             <MIMEType>image/jpeg</MIMEType>
             <Sizing>FitProportional</Sizing>
-            <Top>21.569cm</Top>
+            <Top>21.8865cm</Top>
             <Left>2.64112cm</Left>
             <Height>1.11858cm</Height>
             <Width>5.70158cm</Width>
-            <ZIndex>10</ZIndex>
+            <ZIndex>7</ZIndex>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3762,7 +3667,7 @@
             <Left>0.00002cm</Left>
             <Height>7.48975cm</Height>
             <Width>20.39728cm</Width>
-            <ZIndex>11</ZIndex>
+            <ZIndex>8</ZIndex>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3795,7 +3700,7 @@
             <Left>0cm</Left>
             <Height>0.93401cm</Height>
             <Width>20.39728cm</Width>
-            <ZIndex>12</ZIndex>
+            <ZIndex>9</ZIndex>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3815,13 +3720,97 @@
             <Left>16.12053cm</Left>
             <Height>0.9628cm</Height>
             <Width>4.02942cm</Width>
-            <ZIndex>13</ZIndex>
+            <ZIndex>10</ZIndex>
             <Style>
               <Border>
                 <Style>None</Style>
               </Border>
             </Style>
           </Image>
+          <Rectangle Name="Rectangle1">
+            <ReportItems>
+              <Textbox Name="Textbox138">
+                <CanGrow>true</CanGrow>
+                <KeepTogether>true</KeepTogether>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>="Witness Name:  " &amp; First(Fields!WitnessName.Value, "DataSet_Result") &amp; "  " &amp; "Witness ID/No: " &amp; First(Fields!WitnessIDNo.Value, "DataSet_Result") &amp; " Date " &amp; First(Fields!WitnessDate.Value, "DataSet_Result")</Value>
+                        <Style>
+                          <FontFamily>Times New Roman</FontFamily>
+                          <FontSize>8pt</FontSize>
+                        </Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style>
+                      <TextAlign>Left</TextAlign>
+                    </Style>
+                  </Paragraph>
+                </Paragraphs>
+                <rd:DefaultName>Textbox138</rd:DefaultName>
+                <Top>0cm</Top>
+                <Left>0.01293cm</Left>
+                <Height>1.14317cm</Height>
+                <Width>13.12652cm</Width>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                  <VerticalAlign>Middle</VerticalAlign>
+                  <PaddingLeft>2pt</PaddingLeft>
+                  <PaddingRight>2pt</PaddingRight>
+                  <PaddingTop>2pt</PaddingTop>
+                  <PaddingBottom>2pt</PaddingBottom>
+                </Style>
+              </Textbox>
+              <Textbox Name="Textbox1">
+                <CanGrow>true</CanGrow>
+                <KeepTogether>true</KeepTogether>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>Signature....</Value>
+                        <Style>
+                          <FontFamily>Gadugi</FontFamily>
+                          <FontSize>8pt</FontSize>
+                        </Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style />
+                  </Paragraph>
+                </Paragraphs>
+                <rd:DefaultName>Textbox1</rd:DefaultName>
+                <Top>0cm</Top>
+                <Left>13.62053cm</Left>
+                <Height>1.14317cm</Height>
+                <Width>2.5cm</Width>
+                <ZIndex>1</ZIndex>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                  <VerticalAlign>Middle</VerticalAlign>
+                  <PaddingLeft>2pt</PaddingLeft>
+                  <PaddingRight>2pt</PaddingRight>
+                  <PaddingTop>2pt</PaddingTop>
+                  <PaddingBottom>2pt</PaddingBottom>
+                </Style>
+              </Textbox>
+            </ReportItems>
+            <KeepTogether>true</KeepTogether>
+            <Top>23.58179cm</Top>
+            <Left>0cm</Left>
+            <Height>1.249cm</Height>
+            <Width>20.14995cm</Width>
+            <ZIndex>11</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Rectangle>
         </ReportItems>
         <Height>36.97749cm</Height>
         <Style>
@@ -4173,6 +4162,9 @@ End Function
         </Field>
         <Field Name="Member_National_ID">
           <DataField>Member_National_ID</DataField>
+        </Field>
+        <Field Name="Submitted_On">
+          <DataField>Submitted_On</DataField>
         </Field>
         <Field Name="Guarantor_Member_No">
           <DataField>Guarantor_Member_No</DataField>
