@@ -1461,6 +1461,25 @@ codeunit 90002 "Loans Management"
 
     end;
 
+    procedure GetGrossAmount(LoanApplication: Code[20]) GrossAmount: Decimal
+    var
+        AppraisalParameters: Record "Appraisal Parameters";
+        LoanPayslip: Record "Loan Appraisal Parameters";
+    begin
+        GrossAmount := 0;
+        LoanPayslip.Reset();
+        LoanPayslip.SetRange("Loan No", LoanApplication);
+        if LoanPayslip.FindSet() then begin
+            repeat
+                if AppraisalParameters.get(LoanPayslip."Appraisal Code") then begin
+                    if AppraisalParameters.Type = AppraisalParameters.Type::Earnig then
+                        GrossAmount += LoanPayslip."Parameter Value";
+                end;
+            until LoanPayslip.Next() = 0;
+        end;
+        exit(GrossAmount);
+    end;
+
     procedure GetCollateralValueOnLoan(DocumentNo: Code[20]; LoanNo: Code[20]) OutstandingValue: Decimal
     var
         LoanColateral: Record "Loan Securities";
