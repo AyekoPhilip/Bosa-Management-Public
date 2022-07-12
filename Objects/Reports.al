@@ -3974,10 +3974,12 @@ report 90042 "Standing Order Register"
     UsageCategory = ReportsAndAnalysis;
     ApplicationArea = All;
     RDLCLayout = '.\Loan Management\Credit Reports\Standing_Order_Register.rdl';
+    DefaultLayout = RDLC;
     dataset
     {
         dataitem(DataItemName; "Standing Order")
         {
+            DataItemTableView = where(Running = filter(true));
             column(Document_No; "Document No") { }
             column(STO_Type; "STO Type") { }
             column(Member_No; "Member No") { }
@@ -3996,11 +3998,43 @@ report 90042 "Standing Order Register"
             column(Period; Period) { }
             column(Run_From_Day; "Run From Day") { }
             column(Amount; Amount) { }
+            column(ProductCode; ProductCode) { }
+            column(ProductName; ProductName) { }
+            column(STOFrequency; STOFrequency) { }
+            column(LoanBalance; LoanBalance) { }
+            column(STOStatus; STOStatus) { }
+            //column(Frequency; ) { }
+
+            trigger OnAfterGetRecord()
+            begin
+                LoanBalance := 0;
+                LoanReg.reset;
+                LoanReg.SetRange("Loan Account", "Destination Account");
+                if LoanReg.findset then begin
+                    ProductCode := LoanReg."Product Code";
+                    ProductName := LoanReg."Product Description";
+                    LoanReg.CalcFields("Loan Balance");
+                    LoanBalance := LoanReg."Loan Balance";
+
+                end;
+                STOFrequency := 'Monthly';
+                if Running = true then begin
+                    STOStatus := STOStatus::Successful
+                end
+                else begin
+
+
+                    STOStatus := STOStatus::Unsuccessful;
+                end;
+            end;
+
         }
+
     }
 
     requestpage
     {
+
         layout
         {
             area(Content)
@@ -4029,6 +4063,12 @@ report 90042 "Standing Order Register"
         AccountName, PFNumber, EmployerName, Frequency : Text;
         LastRunDate, NextRunDate : Date;
         Vendor: Record Vendor;
+        STOFrequency: Text[100];
+        LoanReg: Record "Loan Application";
+        ProductCode: code[20];
+        ProductName: Text[100];
+        LoanBalance: Decimal;
+        STOStatus: Enum "Standing Order Frequency";
 }
 report 90043 "FOSA Appraisal"
 {
