@@ -35,6 +35,10 @@ xmlport 90001 "Import Checkoff"
         }
 
     }
+    /// <summary>
+    /// SetCheckoffNo.
+    /// </summary>
+    /// <param name="CheckNo">code[20].</param>
     procedure SetCheckoffNo(CheckNo: code[20])
     var
 
@@ -79,6 +83,10 @@ xmlport 90002 "Import BulkSMS"
         }
 
     }
+    /// <summary>
+    /// SetBulkSMSNo.
+    /// </summary>
+    /// <param name="CheckNo">code[20].</param>
     procedure SetBulkSMSNo(CheckNo: code[20])
     var
 
