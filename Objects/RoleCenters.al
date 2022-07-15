@@ -967,6 +967,35 @@ page 95000 "Credit Clerk"
             {
                 group("Daily Reports")
                 {
+                    group(SASRA)
+                    {
+                        action("Generate Ageing")
+                        {
+                            RunObject = report "Generate Loan Ageing - Q";
+                            Image = AdjustExchangeRates;
+                        }
+                        action("Loan Provision Summary")
+                        {
+                            RunObject = report "Risk Classification";
+                            Image = AbsenceCategory;
+                        }
+
+                        action("Loan Defaulters Ageing ")
+                        {
+                            Image = AbsenceCategory;
+                            RunObject = report "Loan Defaulters";
+                        }
+                    }
+                    action("Generate Defaulters ")
+                    {
+                        Image = AbsenceCategory;
+                        RunObject = report "Gen. Loan Defaulters";
+                    }
+                    action("Loan Aging Analysis ")
+                    {
+                        Image = AbsenceCategory;
+                        RunObject = report "Loan Ageing Analysis";
+                    }
                     action("Loan Issued Summary report ")
                     {
                         Image = AbsenceCategory;
@@ -992,11 +1021,21 @@ page 95000 "Credit Clerk"
                         Image = Segment;
                         RunObject = report "Savings And Loan Listing";
                     }
+                    action("Interest Variance")
+                    {
+                        Image = PostApplication;
+                        RunObject = report "Loan Transactions";
+                    }
+                    action("Underpaid Principle")
+                    {
+                        Image = PostApplication;
+                        RunObject = report "Underpaid Principle";
+                    }
                 }
-                action("Product Analysis")
+                action("Progression Report")
                 {
-                    Image = PostApplication;
-                    RunObject = report "Loan Transactions";
+                    Image = VendorBill;
+                    RunObject = report "Progression Report";
                 }
                 action("Guarantor Register")
                 {

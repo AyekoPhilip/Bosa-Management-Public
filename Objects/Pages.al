@@ -373,6 +373,13 @@ page 90004 "Product Card"
     {
         area(Processing)
         {
+            action("Linked Products")
+            {
+
+                ApplicationArea = All;
+                RunObject = page "Linked Products";
+                RunPageLink = "Product Code" = field(Code);
+            }
 
             action("Product Charges")
             {
@@ -2027,6 +2034,7 @@ page 90018 Loan
             }
             group("Portal Information")
             {
+                Editable = NOT IsWindows;
                 field("Portal Status"; Rec."Portal Status") { }
                 field("Rejection Remarks"; Rec."Rejection Remarks") { }
                 field("Member Deposits"; LoansManagement.GetMemberDeposits(Rec."Member No.")) { }
@@ -2215,6 +2223,7 @@ page 90018 Loan
     trigger OnOpenPage()
     begin
         isOpen := (Rec."Approval Status" = Rec."Approval Status"::New);
+        IsWindows := GuiAllowed;
     end;
 
     trigger OnAfterGetRecord()
@@ -2227,7 +2236,7 @@ page 90018 Loan
 
         ApprovalsMgmt: Codeunit "Approvals Mgmt.";
         ApprovalsMgmtExt: Codeunit "Approval Mgmt. Ext";
-        isOpen: Boolean;
+        isOpen, IsWindows : Boolean;
         Portal: Codeunit PortalIntegrations;
 }
 page 90019 "Loan Schedule"
@@ -4125,7 +4134,7 @@ page 90043 "Loan Details Factbox"
                     {
                         Style = Strong;
                     }
-                    field("Available Recovery"; Portal.AvailableRecovery("Application No"))
+                    field("Available Recovery"; Portal.GetAvailableRecovery("Application No"))
                     {
                         Style = Strong;
                     }
@@ -4384,6 +4393,7 @@ page 90046 "Loans Lookup"
             {
                 field("Application No"; Rec."Application No") { }
                 field("Application Date"; Rec."Application Date") { }
+                field("Loan Batch No."; "Loan Batch No.") { }
                 field("Posting Date"; "Posting Date") { }
                 field("Repayment Start Date"; "Repayment Start Date") { }
                 field(Installments; Installments) { }
@@ -4399,6 +4409,10 @@ page 90046 "Loans Lookup"
                 field("Approved Amount"; Rec."Approved Amount") { }
                 field("Interest Rate"; Rec."Interest Rate") { }
                 field("Interest Repayment Method"; "Interest Repayment Method") { }
+                field("Pay to Bank Code"; "Pay to Bank Code") { }
+                field("Pay to Branch Code"; "Pay to Branch Code") { }
+                field("Pay to Account Name"; "Pay to Account Name") { }
+                field("Pay to Account No"; "Pay to Account No") { }
                 field("Principle Paid"; Rec."Principle Paid") { }
                 field("Principle Balance"; Rec."Principle Balance") { }
                 field("Interest Paid"; Rec."Interest Paid") { }
@@ -19538,10 +19552,13 @@ page 90262 "Member Controls"
         {
             group(GroupName)
             {
-                field("Mobile Loan Blocked"; "Mobile Loan Blocked") { }
                 field("Fosa Account Activated"; "Fosa Account Activated") { }
                 field("FOSA Account Activator"; "FOSA Account Activator") { }
                 field("Guarantee Blocked"; "Guarantee Blocked") { }
+            }
+            part("Mobile Loan Block"; "Mobile Loan Block")
+            {
+                SubPageLink = "Member No" = field("Member No.");
             }
         }
         area(FactBoxes)
@@ -19915,13 +19932,81 @@ page 90268 "Mobile Application(RO)"
     {
         area(Processing)
         {
-            action(ActionName)
+            action("Send Approval Request")
             {
                 ApplicationArea = All;
-
-                trigger OnAction()
+                Image = SendApprovalRequest;
+                trigger OnAction();
                 begin
+                    if ApprovalsMgmtExt.CheckMobileApplicationApprovalsWorkflowEnable(Rec) then
+                        ApprovalsMgmtExt.OnSendMobileApplicationForApproval(Rec);
+                end;
+            }
+            action("Cancel Approval Request")
+            {
+                ApplicationArea = All;
+                Image = CancelApprovalRequest;
+                trigger OnAction();
+                begin
+                    ApprovalsMgmtExt.OnCancelMobileApplicationForApproval(Rec);
+                end;
+            }
 
+            action(Comments)
+            {
+                ApplicationArea = all;
+                Image = ViewComments;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                    ApprovalsMgmt.GetApprovalComment(Rec);
+                end;
+            }
+            action(Approve)
+            {
+                ApplicationArea = all;
+                Image = Approve;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                    IF NOT CONFIRM('Are you sure you want to Approve the document?') THEN
+                        EXIT;
+                    ApprovalsMgmt.ApproveRecordApprovalRequest(Rec.RECORDID);
+                    CurrPage.CLOSE();
+                end;
+            }
+            action(Reject)
+            {
+                ApplicationArea = all;
+                Image = Reject;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                    IF NOT CONFIRM('Are you sure you want to Reject the document?') THEN
+                        EXIT;
+                    ApprovalsMgmt.RejectRecordApprovalRequest(Rec.RECORDID);
+                    CurrPage.CLOSE();
+                end;
+            }
+            action(Delegate)
+            {
+                ApplicationArea = all;
+                Image = Delegate;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                    IF NOT CONFIRM('Are you sure you want to Delegate the document?') THEN
+                        EXIT;
+                    ApprovalsMgmt.DelegateRecordApprovalRequest(Rec.RECORDID);
+                    CurrPage.CLOSE();
                 end;
             }
         }
@@ -19929,6 +20014,7 @@ page 90268 "Mobile Application(RO)"
 
     var
         myInt: Integer;
+        ApprovalsMgmtExt: Codeunit "Approval Mgmt. Ext";
 }
 page 90269 "Mobile Members"
 {
@@ -22194,6 +22280,111 @@ page 90298 "Online Guarantor Substitutions"
                 begin
 
                 end;
+            }
+        }
+    }
+}
+page 90299 "Mobile Applications Lookup"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Mobile Applications";
+    CardPageId = "Mobile Application(RO)";
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Document No"; "Document No") { }
+                field("Member No"; "Member No") { }
+                field("Full Name"; "Full Name") { }
+                field("FOSA Account"; "FOSA Account") { }
+                field("Created By"; "Created By") { }
+                field("Created On"; "Created On") { }
+                field("Approval Status"; "Approval Status") { }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
+            }
+        }
+    }
+}
+page 90300 "Linked Products"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Loan Product Linking";
+
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Linked Product Code"; "Linked Product Code") { }
+                field("Linked Product Name"; "Linked Product Name") { }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
+            }
+        }
+    }
+}
+page 90301 "Mobile Loan Block"
+{
+    PageType = ListPart;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Mobile Loan Blocking";
+
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Product Code"; "Product Code") { }
+                field("Product Name"; "Product Name") { }
             }
         }
     }

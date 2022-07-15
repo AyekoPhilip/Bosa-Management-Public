@@ -1505,6 +1505,7 @@ table 90008 "Members"
         }
         field(75; "Guarantee Blocked"; Boolean) { }
 
+
     }
 
     keys
@@ -2716,7 +2717,8 @@ table 90015 "Loan Application"
         {
             trigger OnValidate()
             begin
-                "New Monthly Installment" := LoansManagement.PopulateMinimumContribution("Application No");
+                if xRec."New Monthly Installment" < LoansManagement.PopulateMinimumContribution("Application No") then
+                    "New Monthly Installment" := LoansManagement.PopulateMinimumContribution("Application No");
             end;
         }
         field(70; "Pay to Bank Code"; Code[20])
@@ -2796,7 +2798,7 @@ table 90015 "Loan Application"
         field(87; "Monthly Principle"; Decimal)
         {
             FieldClass = FlowField;
-            CalcFormula = max("Loan Schedule"."Principle Repayment" where("Loan No." = field("Application No")));
+            CalcFormula = max("Loan Schedule"."Principle Repayment" where("Loan No." = field("Application No"), "Expected Date" = Field("Date Filter")));
             Editable = false;
         }
         field(88; Rescheduled; Boolean) { }
@@ -2826,6 +2828,31 @@ table 90015 "Loan Application"
         field(95; "Qualified Salarywise"; Decimal)
         {
             Editable = false;
+        }
+        field(96; "Last Pay Date"; Date)
+        {
+            FieldClass = FlowField;
+            CalcFormula = max("Vendor Ledger Entry"."Posting Date" where("Loan No." = field("Application No"), "Vendor No." = field("Loan Account"), "Transaction Type" = filter("Interest Paid" | "Principle Paid")));
+            Editable = false;
+        }
+        field(97; "Staff No"; Code[20])
+        {
+            FieldClass = FlowField;
+            CalcFormula = lookup(Members."Payroll No" where("Member No." = field("Member No.")));
+            Editable = false;
+        }
+        field(98; "Employer Code"; Code[20])
+        {
+            TableRelation = "Employer Codes";
+            FieldClass = FlowField;
+            CalcFormula = lookup(members."Employer Code" where("Member No." = field("Member No.")));
+            Editable = false;
+        }
+        field(99; "Principle Balance - At Date"; Decimal)
+        {
+            Editable = false;
+            FieldClass = FlowField;
+            CalcFormula = sum("Detailed Vendor Ledg. Entry".Amount where("Vendor No." = field("Loan Account"), "Loan No." = field("Application No"), "Transaction Type" = filter("Loan Disbursal" | "Principle Paid")));
         }
     }
 
@@ -12085,7 +12112,8 @@ table 90113 "Checkoff Advice"
 table 90114 "Mobile Applications"
 {
     DataClassification = ToBeClassified;
-
+    LookupPageId = "Mobile Applications Lookup";
+    DrillDownPageId = "Mobile Applications Lookup";
     fields
     {
         field(1; "Document No"; Code[20])
@@ -12117,7 +12145,7 @@ table 90114 "Mobile Applications"
         {
             Editable = false;
         }
-        field(4; "Phone No"; Code[11])
+        field(4; "Phone No"; Code[20])
         {
             Editable = false;
         }
@@ -12947,6 +12975,12 @@ table 90119 "Online Loan Application"
             CalcFormula = sum("Detailed Vendor Ledg. Entry".Amount WHERE("Vendor No." = field("Loan Account"), "Transaction Type" = const("Loan Disbursal"), "Loan No." = field("Application No"), "Posting Date" = field("Date Filter")));
             Editable = false;
         }
+        field(95; "Principle Balance - At Date"; Decimal)
+        {
+            Editable = false;
+            FieldClass = FlowField;
+            CalcFormula = sum("Detailed Vendor Ledg. Entry".Amount where("Vendor No." = field("Loan Account"), "Loan No." = field("Application No"), "Transaction Type" = filter("Loan Disbursal" | "Principle Paid")));
+        }
     }
 
     keys
@@ -13101,6 +13135,127 @@ table 90121 "Loan Recovey Accounts"
             if LoanRecovery."Guarantor Deposit Recovery" + LoanRecovery."Guarantor Liability Recovery" > 0 then
                 Error('You Cannot combine Member Recovery and Guarantor Recovery');
         end;
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+
+table 90122 "Loan Product Linking"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Product Code"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Linked Product Code"; Code[20])
+        {
+            TableRelation = "Product Factory";
+            trigger OnValidate()
+            var
+                Products: Record "Product Factory";
+            begin
+                if Products.Get("Linked Product Code") then
+                    "Linked Product Name" := Products.Name;
+            end;
+        }
+        field(3; "Linked Product Name"; Text[100])
+        {
+            Editable = false;
+        }
+    }
+
+    keys
+    {
+        key(Key1; "Product Code", "Linked Product Code")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+table 90123 "Mobile Loan Blocking"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Member No"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Product Code"; Code[20])
+        {
+            TableRelation = "Product Factory" where("Mobile Loan" = const(true));
+            trigger OnValidate()
+            var
+                Products: Record "Product Factory";
+            begin
+                if Products.Get("Product Code") then
+                    "Product Name" := Products.Name;
+            end;
+        }
+        field(3; "Product Name"; Text[100])
+        {
+            Editable = false;
+        }
+    }
+
+    keys
+    {
+        key(Key1; "Member No", "Product Code")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
     end;
 
     trigger OnModify()

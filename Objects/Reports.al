@@ -559,7 +559,7 @@ report 90005 "Loan Appraisal"
                 GuarantorWarning := '';
                 "Loan Application".CalcFields("Total Securities", "Total Collateral");
                 if "Loan Application"."Total Securities" + "Loan Application"."Total Collateral" < "Loan Application"."Applied Amount" then
-                    GuarantorWarning := 'The Loan is unsecured';
+                    GuarantorWarning := 'The Loan is unsecured by Ksh. ' + Format(("Loan Application"."Total Securities" + "Loan Application"."Total Collateral" - "Loan Application"."Applied Amount"));
                 "Loan Application".CalcFields("Monthly Inistallment");
                 MInstallment := "Loan Application"."Monthly Inistallment";
                 AppraisalParameters.Reset();
@@ -675,6 +675,7 @@ report 90005 "Loan Appraisal"
         ParameterSetup: Record "Appraisal Parameters";
         TagLine, GuarantorWarning, ThirdRuleWarning, LoanToDepositRatioWarning, RetirementWarning : Text[100];
         SpecialLoan, SpecialLoans2 : Decimal;
+
 
 }
 report 90006 "Generate Loan Ageing - Q"
@@ -808,6 +809,7 @@ report 90008 "Loan Register"
 
     UsageCategory = Administration;
     ApplicationArea = All;
+    PreviewMode = Normal;
     DefaultLayout = RDLC;
     RDLCLayout = '.\Loan Management\Credit Reports\Loan register.rdl';
     dataset
@@ -818,11 +820,11 @@ report 90008 "Loan Register"
             column(Application_No; "Application No") { }
             column(Application_Date; "Application Date") { }
             column(Member_No_; "Member No.") { }
-            column(Member_Name; "Member Name") { }
+            column(Member_Name; Members."Full Name") { }
             column(Product_Code; "Product Code") { }
-            column(EmployerCode; EmployerCode) { }
+            column(EmployerCode; "Employer Code") { }
             column(EmployerName; EmployerName) { }
-            column(Product_Description; "Product Description") { }
+            column(Product_Description; ProductName) { }
             column(Applied_Amount; "Applied Amount") { }
             column(Approved_Amount; "Approved Amount") { }
             column(Interest_Balance; "Interest Balance") { }
@@ -841,14 +843,22 @@ report 90008 "Loan Register"
             column("CompanyPhone"; CompanyInformation."Phone No.") { }
             column("CompanyEmail"; CompanyInformation."E-Mail") { }
             column(Interest_Repayment_Method; "Interest Repayment Method") { }
+            column(Posting_Date; "Posting Date") { }
+            column(Staff_No; "Staff No") { }
+            column(Approval_Status; "Approval Status") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
 
             trigger OnAfterGetRecord()
             begin
                 CompanyInformation.get;
+                ProductName := '';
                 CompanyInformation.CalcFields(Picture);
+                if Products.get("Product Code") then
+                    ProductName := Products.Name;
                 EmployerCode := '';
                 EmployerName := '';
                 if Members.Get("Member No.") then begin
+                    EmployerCode := Members."Employer Code";
                     if Employers.Get(EmployerCode) then begin
                         EmployerCode := Employers.Code;
                         EmployerName := Employers.Name;
@@ -887,9 +897,10 @@ report 90008 "Loan Register"
 
     var
         CompanyInformation: Record "Company Information";
-        EmployerCode, EmployerName : Code[100];
+        EmployerCode, EmployerName, ProductName : Code[100];
         Members: Record Members;
         Employers: Record "Employer Codes";
+        Products: Record "Product Factory";
 }
 
 report 90009 "Member Statement"
@@ -2404,6 +2415,7 @@ report 90026 "Risk Classification"
             column(ProvisionAmount; ProvisionAmount) { }
             column(Net_Change_Principal; "Net Change-Principal") { }
             column(Application_No; "Application No") { }
+            column(GroupOrder2; GroupOrder2) { }
             column(GroupText; GroupText) { }
             trigger OnAfterGetRecord()
             begin
@@ -2427,6 +2439,19 @@ report 90026 "Risk Classification"
                         Provision := 1;
                 end;
                 ProvisionAmount := "Loan Application"."Net Change-Principal" * Provision;
+
+                case "Loan Application"."Loan Classification" of
+                    "Loan Application"."Loan Classification"::Performing:
+                        GroupOrder2 := 1;
+                    "Loan Application"."Loan Classification"::Watch:
+                        GroupOrder2 := 2;
+                    "Loan Application"."Loan Classification"::Substandard:
+                        GroupOrder2 := 3;
+                    "Loan Application"."Loan Classification"::Doubtfull:
+                        GroupOrder2 := 4;
+                    "Loan Application"."Loan Classification"::Loss:
+                        GroupOrder2 := 5;
+                end;
             end;
         }
     }
@@ -2437,9 +2462,9 @@ report 90026 "Risk Classification"
         {
             area(Content)
             {
-                group(GroupName)
+                group("Report Parameters")
                 {
-                    field(Name; AsAt)
+                    field("As At Date"; AsAt)
                     {
                         ApplicationArea = All;
 
@@ -3311,8 +3336,8 @@ report 90036 "Member Guarantors"
                 column(OwnerNo; OwnerNo) { }
                 column(OwnerName; OwnerName) { }
                 column(LoanBalance; LoanBalance) { }
-                column(ProductCode; ProductCode) { }
                 column(ProductName; ProductName) { }
+                column(ProductCode; ProductCode) { }
                 column(LoanPrinciple; LoanPrinciple) { }
                 trigger OnAfterGetRecord()
                 begin
@@ -3579,8 +3604,8 @@ report 90038 "Loan Application"
                     if WitnessRequest.FindFirst() then
                         WitnessDate := DT2Date(WitnessRequest."Responded On");
                 end;
-                /*Clear(AmountInWords)
-                Check.InitTextVariable();
+                Clear(AmountInWords);
+                /*Check.ini
                 Check.FormatNoText(AmountInWords, Net, '');*/
                 AccountNo := '';
                 AccountNo := MemberMgt.GetMemberAccount("Member No.", 'FOSA');
@@ -4364,14 +4389,11 @@ report 90044 "Disbursement Summary"
                 CompanyInformation.CalcFields(Picture);
                 if "Loan Application"."Applied Amount" = 0 then
                     CurrReport.Skip();
-                EmployerCode := '';
-                EmployerName := '';
-                if Members.Get("Member No.") then begin
-                    if Employers.Get(EmployerCode) then begin
-                        EmployerCode := Employers.Code;
-                        EmployerName := Employers.Name;
-                    end;
-                end;
+                ProductName := '';
+                if Products.get("Product Code") then
+                    ProductName := Products.Name
+                else
+                    CurrReport.Skip();
             end;
 
         }
@@ -4408,7 +4430,8 @@ report 90044 "Disbursement Summary"
         EmployerCode, EmployerName : Code[100];
         Members: Record Members;
         Employers: Record "Employer Codes";
-        Filters: Text;
+        Filters, ProductName : Text;
+        Products: Record "Product Factory";
 }
 report 90045 "Loan Balances Summary"
 {
@@ -4445,8 +4468,6 @@ report 90045 "Loan Balances Summary"
             begin
                 CompanyInformation.get;
                 CompanyInformation.CalcFields(Picture);
-                if "Loan Application"."Applied Amount" = 0 then
-                    CurrReport.Skip();
                 EmployerCode := '';
                 EmployerName := '';
                 if Members.Get("Member No.") then begin
@@ -4520,9 +4541,9 @@ report 90046 "Savings And Loan Listing"
             dataitem(Vendor; Vendor)
             {
                 DataItemLink = "Member No." = field("Member No.");
-                DataItemTableView = where("Account Class" = const(Loan));
                 column(No_; "No.") { }
                 column(Name; Name) { }
+                column(Account_Class; "Account Class") { }
                 column(Net_Change; "Net Change") { }
             }
 
@@ -4530,7 +4551,6 @@ report 90046 "Savings And Loan Listing"
             begin
                 CompanyInformation.get;
                 CompanyInformation.CalcFields(Picture);
-                Members.CalcFields("Total Deposits");
             end;
 
         }
@@ -4568,6 +4588,530 @@ report 90046 "Savings And Loan Listing"
         MemberMgt: Codeunit "Member Management";
         IssueDate: Date;
         SortingOrder: Integer;
+}
+report 90047 "Loan Ageing Analysis"
+{
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\LoanAgeingAnalysis.rdl';
+    dataset
+    {
+        dataitem("Loan Application"; "Loan Application")
+        {
+            column(Application_No; "Application No") { }
+            column(Installments; Installments) { }
+            column(Member_No_; "Member No.") { }
+            column(Member_Name; "Member Name") { }
+            column(Posting_Date; "Posting Date") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
+            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Approved_Amount; "Approved Amount") { }
+            column(Loan_Balance; "Net Change-Principal") { }
+            column(Net_Change_Principal; "Net Change-Principal") { }
+            column(GroupSortingOrder; GroupSortingOrder) { }
+            column(Product_Code; "Product Code") { }
+            column(Product_Description; "Product Description") { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(RemainingPeriod; RemainingPeriod) { }
+            column(AgeingGroup; AgeingGroup) { }
+            column(Staff_No; "Staff No") { }
+            column(Filters; Filters) { }
+            trigger OnPreDataItem()
+            begin
+                Filters := "Loan Application".GetFilters;
+                CompanyInformation.get();
+                CompanyInformation.CalcFields(Picture);
+            end;
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                EmployerCode := '';
+                EmployerName := '';
+                if Members.Get("Member No.") then begin
+                    if Employers.Get(EmployerCode) then begin
+                        EmployerCode := Employers.Code;
+                        EmployerName := Employers.Name;
+                    end;
+                end;
+                AgeingGroup := '';
+                RemainingPeriod := "Loan Application"."Repayment End Date" - Today;
+                RemainingPeriod := Round((RemainingPeriod / 30), 1, '>');
+                if ((RemainingPeriod > 0) AND (RemainingPeriod <= 3)) then begin
+                    AgeingGroup := '1-3 Months';
+                    GroupSortingOrder := 1;
+                end else
+                    if ((RemainingPeriod > 3) AND (RemainingPeriod <= 6)) then begin
+                        AgeingGroup := '4-6 Months';
+                        GroupSortingOrder := 2;
+                    end else
+                        if ((RemainingPeriod > 6) AND (RemainingPeriod <= 9)) then begin
+                            AgeingGroup := '7-9 Months';
+                            GroupSortingOrder := 3;
+                        end else
+                            if ((RemainingPeriod > 9) AND (RemainingPeriod <= 12)) then begin
+                                AgeingGroup := '10-12 Months';
+                                GroupSortingOrder := 4;
+                            end else
+                                if ((RemainingPeriod > 12) AND (RemainingPeriod <= 24)) then begin
+                                    AgeingGroup := '13-24 Months';
+                                    GroupSortingOrder := 5;
+                                end else
+                                    if ((RemainingPeriod > 24) AND (RemainingPeriod <= 36)) then begin
+                                        AgeingGroup := '25-36 Months';
+                                        GroupSortingOrder := 6;
+                                    end else
+                                        if RemainingPeriod > 36 then begin
+                                            AgeingGroup := 'More than 3 years';
+                                            GroupSortingOrder := 7;
+                                        end else
+                                            CurrReport.Skip();
+            end;
+
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group("Report Filters")
+                {
+                    field("As At Date"; AsAtDate) { }
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        EmployerCode, EmployerName : Code[100];
+        Members: Record Members;
+        Employers: Record "Employer Codes";
+        Filters: Text;
+        AgeingGroup: Text[100];
+        RemainingPeriod, GroupSortingOrder : Integer;
+        AsAtDate: Date;
+
+}
+
+report 90048 "Loan Defaulters"
+{
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\LoanDefaulters.rdl';
+    dataset
+    {
+        dataitem("Loan Application"; "Loan Application")
+        {
+            column(Application_No; "Application No") { }
+            column(Installments; Installments) { }
+            column(Loan_Classification; "Loan Classification") { }
+            column(Deposits; Deposits) { }
+            column(Member_No_; "Member No.") { }
+            column(Member_Name; "Member Name") { }
+            column(EmployerName; EmployerName) { }
+            column(Posting_Date; "Posting Date") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
+            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Approved_Amount; "Approved Amount") { }
+            column(Loan_Balance; "Net Change-Principal") { }
+            column(Net_Change_Principal; "Net Change-Principal") { }
+            column(GroupSortingOrder; GroupSortingOrder) { }
+            column(Product_Code; "Product Code") { }
+            column(Product_Description; "Product Description") { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(RemainingPeriod; RemainingPeriod) { }
+            column(Principle_Balance; "Net Change-Principal") { }
+            column(AgeingGroup; AgeingGroup) { }
+            column(Staff_No; "Staff No") { }
+            column(Filters; Filters) { }
+            column(Interest_Rate; "Interest Rate") { }
+            column(Rate_Type; "Interest Repayment Method") { }
+            trigger OnPreDataItem()
+            begin
+                Filters := "Loan Application".GetFilters;
+                CompanyInformation.get();
+                CompanyInformation.CalcFields(Picture);
+            end;
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                "Loan Application".CalcFields("Employer Code");
+                EmployerCode := '';
+                EmployerName := '';
+                if Employers.get("Employer Code") then
+                    EmployerName := Employers.Name;
+                Deposits := 0;
+                Deposits := LoansMgt.GetMemberDeposits("Member No.");
+                AgeingGroup := '';
+            end;
+
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+                    field("As At Date"; AsAtDate) { }
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        Deposits: Decimal;
+        MemberMgt: Codeunit "Member Management";
+        LoansMgt: Codeunit "Loans Management";
+        EmployerCode, EmployerName : Code[100];
+        Members: Record Members;
+        Employers: Record "Employer Codes";
+        Filters: Text;
+        AgeingGroup: Text[100];
+        RemainingPeriod, GroupSortingOrder : Integer;
+        AsAtDate: Date;
+
+}
+
+report 90049 "Gen. Loan Defaulters"
+{
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\GenerateLoanDefaulters.rdl';
+    dataset
+    {
+        dataitem("Loan Application"; "Loan Application")
+        {
+            RequestFilterFields = "Date Filter", "Member No.", "Application No", "Application Date";
+            column(Application_No; "Application No") { }
+            column(Installments; Installments) { }
+            column(Loan_Classification; "Loan Classification") { }
+            column(Deposits; Deposits) { }
+            column(Member_No_; "Member No.") { }
+            column(Member_Name; "Member Name") { }
+            column(EmployerName; EmployerName) { }
+            column(Posting_Date; "Posting Date") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
+            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Approved_Amount; "Approved Amount") { }
+            column(Loan_Balance; "Loan Balance") { }
+            column(GroupSortingOrder; GroupSortingOrder) { }
+            column(Product_Code; "Product Code") { }
+            column(Product_Description; "Product Description") { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(RemainingPeriod; RemainingPeriod) { }
+            column(Principle_Balance; "Principle Balance") { }
+            column(LoanAge; LoanAge) { }
+            column(Principle_Paid; PrinciplePaid) { }
+            column(Interest_Arrears; "Interest Arrears") { }
+            column(Employer_Code; "Employer Code") { }
+            column(Monthly_Principle; "Monthly Principle") { }
+            column(AgeingGroup; AgeingGroup) { }
+            column(Staff_No; "Staff No") { }
+            column(Filters; Filters) { }
+            column(Interest_Rate; "Interest Rate") { }
+            column(Rate_Type; "Interest Repayment Method") { }
+            column(MonthlyPrinciple; MonthlyPrinciple) { }
+            column(PrincipleDue; PrincipleDue) { }
+            trigger OnPreDataItem()
+            begin
+                Filters := "Loan Application".GetFilters;
+                CompanyInformation.get();
+                CompanyInformation.CalcFields(Picture);
+            end;
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                if "Loan Application"."Applied Amount" = 0 then
+                    CurrReport.Skip();
+                "Loan Application".CalcFields("Employer Code");
+                EmployerCode := '';
+                EmployerName := '';
+                if Employers.get("Employer Code") then
+                    EmployerName := Employers.Name;
+                PrinciplePaid := 0;
+                LoanAge := 0;
+                LoanAge := LoansMgt.GetLoanAge("Application No", AsAtDate, DefPrinciple, PrinciplePaid, PrincipleDue, MonthlyPrinciple);
+                if DefPrinciple = 0 then
+                    CurrReport.Skip();
+                Deposits := 0;
+                Deposits := LoansMgt.GetMemberDeposits("Member No.");
+                AgeingGroup := '';
+                if "Loan Application"."Repayment End Date" = 0D then
+                    CurrReport.Skip();
+            end;
+
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group("Report Filters")
+                {
+                    field("AS At Date"; AsAtDate) { }
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        Deposits, DefPrinciple, PrinciplePaid, MonthlyPrinciple, PrincipleDue : Decimal;
+        MemberMgt: Codeunit "Member Management";
+        LoansMgt: Codeunit "Loans Management";
+        EmployerCode, EmployerName : Code[100];
+        Members: Record Members;
+        Employers: Record "Employer Codes";
+        Filters: Text;
+        AgeingGroup: Text[100];
+        RemainingPeriod, GroupSortingOrder : Integer;
+        AsAtDate: Date;
+        LoanAge: Integer;
+
+}
+report 90050 "Progression Report"
+{
+
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\ProgressionReport.rdl';
+    dataset
+    {
+        dataitem(Vendor; Vendor)
+        {
+            RequestFilterFields = "Vendor Posting Group", "Member No.", "Date Filter";
+            DataItemTableView = where("Member No." = filter(<> ''));
+            column(Member_No_; "Member No.") { }
+            column(No_; "No.") { }
+            column(Name; Name) { }
+            column(Search_Name; "Search Name") { }
+            dataitem("Vendor Ledger Entry"; "Vendor Ledger Entry")
+            {
+                DataItemLink = "Vendor No." = field("No."), "Posting Date" = field("Date Filter");
+                DataItemTableView = sorting("Entry No.");
+                column(Posting_Date; "Posting Date") { }
+                column(Amount; Amount) { }
+            }
+            trigger OnAfterGetRecord()
+            begin
+                DateFilter := Vendor.GetFilter("Date Filter");
+                if DateFilter = '' then
+                    Error('Please Fill a date range');
+            end;
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        DateFilter: Text;
+}
+report 90051 "Underpaid Principle"
+{
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\UnderpaidPrinciple.rdl';
+    dataset
+    {
+        dataitem("Loan Application"; "Loan Application")
+        {
+            RequestFilterFields = "Date Filter", "Member No.", "Application No", "Application Date";
+            column(Application_No; "Application No") { }
+            column(Installments; Installments) { }
+            column(Loan_Classification; "Loan Classification") { }
+            column(Deposits; Deposits) { }
+            column(Member_No_; "Member No.") { }
+            column(Member_Name; "Member Name") { }
+            column(EmployerName; EmployerName) { }
+            column(Posting_Date; "Posting Date") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
+            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Approved_Amount; "Approved Amount") { }
+            column(Loan_Balance; "Loan Balance") { }
+            column(GroupSortingOrder; GroupSortingOrder) { }
+            column(Product_Code; "Product Code") { }
+            column(Product_Description; "Product Description") { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(RemainingPeriod; RemainingPeriod) { }
+            column(Principle_Balance; "Principle Balance - At Date") { }
+            column(LoanAge; LoanAge) { }
+            column(Principle_Paid; "Principle Paid") { }
+            column(Interest_Arrears; "Interest Arrears") { }
+            column(Employer_Code; "Employer Code") { }
+            column(Monthly_Principle; "Monthly Principle") { }
+            column(AgeingGroup; AgeingGroup) { }
+            column(Staff_No; "Staff No") { }
+            column(Filters; Filters) { }
+            column(Interest_Rate; "Interest Rate") { }
+            column(Rate_Type; "Interest Repayment Method") { }
+            column(PrincipleDue; PrincipleDue) { }
+            trigger OnPreDataItem()
+            begin
+                Filters := "Loan Application".GetFilters;
+                CompanyInformation.get();
+                CompanyInformation.CalcFields(Picture);
+            end;
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                "Loan Application".CalcFields("Employer Code");
+                EmployerCode := '';
+                EmployerName := '';
+                if Employers.get("Employer Code") then
+                    EmployerName := Employers.Name;
+                AgeingGroup := '';
+                if "Loan Application"."Repayment End Date" = 0D then
+                    CurrReport.Skip();
+            end;
+
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        Deposits, DefPrinciple, PrinciplePaid, MonthlyPrinciple, PrincipleDue : Decimal;
+        MemberMgt: Codeunit "Member Management";
+        LoansMgt: Codeunit "Loans Management";
+        EmployerCode, EmployerName : Code[100];
+        Members: Record Members;
+        Employers: Record "Employer Codes";
+        Filters: Text;
+        AgeingGroup: Text[100];
+        RemainingPeriod, GroupSortingOrder : Integer;
+        AsAtDate: Date;
+        LoanAge: Integer;
+
 }
 
 //report 90015

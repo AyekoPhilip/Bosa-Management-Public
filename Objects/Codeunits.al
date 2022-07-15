@@ -1461,6 +1461,42 @@ codeunit 90002 "Loans Management"
 
     end;
 
+    procedure GetLoanAge(LoanNo: Code[20]; AsAtDate: Date; var DefaultedPrinciple: Decimal; var PrinciplePaid: Decimal; var PrincipleDue: Decimal; var MonthlyPrinciple: Decimal) LAge: Integer
+    var
+        LoanApplication: Record "Loan Application";
+        DateFilter: Text;
+        LoanSchedule: Record "Loan Schedule";
+    begin
+        DateFilter := '..' + Format(AsAtDate);
+        MonthlyPrinciple := 0;
+        LoanSchedule.Reset();
+        LoanSchedule.SetRange("Loan No.", LoanNo);
+        LoanSchedule.SetFilter("Expected Date", DateFilter);
+        if LoanSchedule.FindLast() then
+            MonthlyPrinciple := LoanSchedule."Principle Repayment";
+        LoanApplication.Reset();
+        LoanApplication.SetFilter("Date Filter", DateFilter);
+        LoanApplication.SetRange("Application No", LoanNo);
+        if LoanApplication.FindSet() then begin
+            if LoanApplication."Repayment Start Date" = 0D then begin
+                DefaultedPrinciple := 0;
+                exit(0);
+            end;
+            LoanApplication.CalcFields("Principle Repayment", "Net Change-Principal");
+            PrincipleDue := LoanApplication."Principle Repayment";
+            PrinciplePaid := LoanApplication."Approved Amount" - LoanApplication."Net Change-Principal";
+            if PrinciplePaid < 0 then
+                PrinciplePaid := 0;
+        end;
+        LAge := AsAtDate - LoanApplication."Repayment Start Date";
+        LAge := Round((LAge / 30), 1, '>');
+        DefaultedPrinciple := 0;
+        DefaultedPrinciple := PrincipleDue - PrinciplePaid;
+        if DefaultedPrinciple < 0 then
+            DefaultedPrinciple := 0;
+        exit(LAge);
+    end;
+
     procedure GetGrossAmount(LoanApplication: Code[20]) GrossAmount: Decimal
     var
         AppraisalParameters: Record "Appraisal Parameters";
@@ -3268,91 +3304,91 @@ codeunit 90002 "Loans Management"
         NextMonth: Integer;
         Year: Integer;
     begin
-        i := 1;
-        RepaymentSchedule.Reset();
-        RepaymentSchedule.SetRange("Loan No.", LoanApplication."Application No");
-        if RepaymentSchedule.FindSet() then
-            RepaymentSchedule.DeleteAll();
-        Window.OPEN('Creating Schedule \#1## \#2##');
-        LoanProducts.GET(LoanApplication."Product Code");
-        LoanApplication.TESTFIELD("Repayment Start Date");
-        LoanApplication."Repayment Start Date" := GetRepaymentOnlineStartDate(LoanApplication);
-        LoanApplication.TESTFIELD(Installments);
-        LoanApplication."Repayment End Date" := CalcDate(Format(LoanApplication.Installments) + 'M', LoanApplication."Repayment Start Date");
-        LoanApplication.Modify();
-        AnniversaryDay := Date2DMY(LoanApplication."Repayment Start Date", 1);
-        RepaymentSchedule.RESET;
-        IF RepaymentSchedule.FINDLAST THEN
-            EntryNo := RepaymentSchedule."Entry No" + 1
-        ELSE
-            EntryNo := 1;
-        PrincipleBalance := LoanApplication."Approved Amount";
-        if PrincipleBalance = 0 then
-            PrincipleBalance := LoanApplication."Applied Amount";
-        EndDate := LoanApplication."Repayment End Date";
-        StartDate := LoanApplication."Repayment Start Date";
-        PrincipleAmnt := 0;
-        PrincipleAmnt := PrincipleBalance;
-        InterestBalance := 0;
-        LBalance := PrincipleBalance;
-        PrincipleAmnt := PrincipleBalance;
-        RunningBalance := LBalance;
-        NextMonth := 0;
-        Year := 0;
-        Window.Update(2, EndDate);
-        REPEAT
-            i += 1;
-            IF LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::Amortised THEN BEGIN
-                LoanApplication.TESTFIELD("Installments");
-                IF LoanProducts."Rate Type" = LoanProducts."Rate Type"::"Per-Annum" THEN
-                    TotalMRepay := ROUND((LoanApplication."Interest Rate" / 12 / 100) / (1 - POWER((1 + (LoanApplication."Interest Rate" / 12 / 100)), -(LoanApplication."Installments"))) * (PrincipleAmnt), 0.0001, '>')
-                ELSE
-                    TotalMRepay := ROUND((LoanApplication."Interest Rate" / 100) / (1 - POWER((1 + (LoanApplication."Interest Rate" / 100)), -(LoanApplication."Installments"))) * (PrincipleAmnt), 0.0001, '>');
-                LInterest := LBalance / 100 / 12 * LoanApplication."Interest Rate";
-                LPrincipal := TotalMRepay - LInterest;
-            END;
-            IF LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::"Straight Line" THEN BEGIN
-                LoanApplication.TESTFIELD("Installments");
-                LPrincipal := PrincipleAmnt / LoanApplication."Installments";
-                IF LoanProducts."Rate Type" = LoanProducts."Rate Type"::"Per-Annum" THEN
-                    LInterest := (LoanApplication."Interest Rate" / 12 / 100) * PrincipleAmnt
-                ELSE
-                    LInterest := (LoanApplication."Interest Rate" / 100) * PrincipleAmnt;
-                LInterest := LInterest;
-            END;
-            IF LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::"Reducing Balance" THEN BEGIN
-                LoanApplication.TESTFIELD("Installments");
-                LPrincipal := PrincipleAmnt / LoanApplication."Installments";
-                IF LoanProducts."Rate Type" = LoanProducts."Rate Type"::"Per-Annum" THEN
-                    LInterest := (LoanApplication."Interest Rate" / 12 / 100) * LBalance
-                ELSE
-                    LInterest := (LoanApplication."Interest Rate" / 100) * LBalance;
-                LInterest := LInterest;
-            END;
-            RunningBalance -= LPrincipal;
-            ExpectedDate := StartDate;
-            InstallmentNo := GetDocumentNo(StartDate);
-            RepaymentSchedule.INIT;
-            RepaymentSchedule."Entry No" := EntryNo;
-            EntryNo += 1;
-            RepaymentSchedule."Document No." := InstallmentNo;
-            RepaymentSchedule."Expected Date" := StartDate;
-            RepaymentSchedule.Description := 'Monthly Installment';
-            RepaymentSchedule."Principle Repayment" := LPrincipal;
-            RepaymentSchedule."Interest Repayment" := LInterest;
-            RepaymentSchedule."Monthly Repayment" := LPrincipal + LInterest;
-            RepaymentSchedule."Running Balance" := RunningBalance;
-            RepaymentSchedule."Loan No." := LoanApplication."Application No";
-            RepaymentSchedule.INSERT;
-            LBalance := LBalance - LPrincipal;
-            Window.UPDATE(1, InstallmentNo);
-            StartDate := CalcDate('1M', StartDate);
-            IF StartDate > EndDate THEN BEGIN
-                StartDate := EndDate;
-            END;
-        UNTIL i > LoanApplication.Installments;
-        Window.CLOSE;
-
+        if ((LoanApplication.Installments <> 0) and (LoanApplication."Repayment Start Date" <> 0D)) then begin
+            i := 1;
+            RepaymentSchedule.Reset();
+            RepaymentSchedule.SetRange("Loan No.", LoanApplication."Application No");
+            if RepaymentSchedule.FindSet() then
+                RepaymentSchedule.DeleteAll();
+            Window.OPEN('Creating Schedule \#1## \#2##');
+            LoanProducts.GET(LoanApplication."Product Code");
+            LoanApplication.TESTFIELD("Repayment Start Date");
+            LoanApplication."Repayment Start Date" := GetRepaymentOnlineStartDate(LoanApplication);
+            LoanApplication."Repayment End Date" := CalcDate(Format(LoanApplication.Installments) + 'M', LoanApplication."Repayment Start Date");
+            LoanApplication.Modify();
+            AnniversaryDay := Date2DMY(LoanApplication."Repayment Start Date", 1);
+            RepaymentSchedule.RESET;
+            IF RepaymentSchedule.FINDLAST THEN
+                EntryNo := RepaymentSchedule."Entry No" + 1
+            ELSE
+                EntryNo := 1;
+            PrincipleBalance := LoanApplication."Approved Amount";
+            if PrincipleBalance = 0 then
+                PrincipleBalance := LoanApplication."Applied Amount";
+            EndDate := LoanApplication."Repayment End Date";
+            StartDate := LoanApplication."Repayment Start Date";
+            PrincipleAmnt := 0;
+            PrincipleAmnt := PrincipleBalance;
+            InterestBalance := 0;
+            LBalance := PrincipleBalance;
+            PrincipleAmnt := PrincipleBalance;
+            RunningBalance := LBalance;
+            NextMonth := 0;
+            Year := 0;
+            Window.Update(2, EndDate);
+            REPEAT
+                i += 1;
+                IF LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::Amortised THEN BEGIN
+                    LoanApplication.TESTFIELD("Installments");
+                    IF LoanProducts."Rate Type" = LoanProducts."Rate Type"::"Per-Annum" THEN
+                        TotalMRepay := ROUND((LoanApplication."Interest Rate" / 12 / 100) / (1 - POWER((1 + (LoanApplication."Interest Rate" / 12 / 100)), -(LoanApplication."Installments"))) * (PrincipleAmnt), 0.0001, '>')
+                    ELSE
+                        TotalMRepay := ROUND((LoanApplication."Interest Rate" / 100) / (1 - POWER((1 + (LoanApplication."Interest Rate" / 100)), -(LoanApplication."Installments"))) * (PrincipleAmnt), 0.0001, '>');
+                    LInterest := LBalance / 100 / 12 * LoanApplication."Interest Rate";
+                    LPrincipal := TotalMRepay - LInterest;
+                END;
+                IF LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::"Straight Line" THEN BEGIN
+                    LoanApplication.TESTFIELD("Installments");
+                    LPrincipal := PrincipleAmnt / LoanApplication."Installments";
+                    IF LoanProducts."Rate Type" = LoanProducts."Rate Type"::"Per-Annum" THEN
+                        LInterest := (LoanApplication."Interest Rate" / 12 / 100) * PrincipleAmnt
+                    ELSE
+                        LInterest := (LoanApplication."Interest Rate" / 100) * PrincipleAmnt;
+                    LInterest := LInterest;
+                END;
+                IF LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::"Reducing Balance" THEN BEGIN
+                    LoanApplication.TESTFIELD("Installments");
+                    LPrincipal := PrincipleAmnt / LoanApplication."Installments";
+                    IF LoanProducts."Rate Type" = LoanProducts."Rate Type"::"Per-Annum" THEN
+                        LInterest := (LoanApplication."Interest Rate" / 12 / 100) * LBalance
+                    ELSE
+                        LInterest := (LoanApplication."Interest Rate" / 100) * LBalance;
+                    LInterest := LInterest;
+                END;
+                RunningBalance -= LPrincipal;
+                ExpectedDate := StartDate;
+                InstallmentNo := GetDocumentNo(StartDate);
+                RepaymentSchedule.INIT;
+                RepaymentSchedule."Entry No" := EntryNo;
+                EntryNo += 1;
+                RepaymentSchedule."Document No." := InstallmentNo;
+                RepaymentSchedule."Expected Date" := StartDate;
+                RepaymentSchedule.Description := 'Monthly Installment';
+                RepaymentSchedule."Principle Repayment" := LPrincipal;
+                RepaymentSchedule."Interest Repayment" := LInterest;
+                RepaymentSchedule."Monthly Repayment" := LPrincipal + LInterest;
+                RepaymentSchedule."Running Balance" := RunningBalance;
+                RepaymentSchedule."Loan No." := LoanApplication."Application No";
+                RepaymentSchedule.INSERT;
+                LBalance := LBalance - LPrincipal;
+                Window.UPDATE(1, InstallmentNo);
+                StartDate := CalcDate('1M', StartDate);
+                IF StartDate > EndDate THEN BEGIN
+                    StartDate := EndDate;
+                END;
+            UNTIL i > LoanApplication.Installments;
+            Window.CLOSE;
+        end;
     end;
 
     procedure GetDocumentNo(ParseDate: Date) DocumentNo: Code[20]
@@ -4772,7 +4808,7 @@ codeunit 90002 "Loans Management"
             LoanRecoveries.SetRange("Loan No", LoanApplication."Application No");
             LoanRecoveries.SetRange("Recovery Code", LoanApplication2."Application No");
             if LoanRecoveries.IsEmpty then
-                Error('The Member has a running loan of ' + LoanApplication."Product Description");
+                Error('You have a running loan of ' + LoanApplication."Product Description");
         end;
         LoanProduct.Get(LoanApplication."Product Code");
         if LoanProduct."Minimum Deposit Balance" > GetMemberDeposits(LoanApplication."Member No.") then
@@ -4795,7 +4831,7 @@ codeunit 90002 "Loans Management"
             LoanRecoveries.SetRange("Loan No", LoanApplication."Application No");
             LoanRecoveries.SetRange("Recovery Code", LoanApplication2."Application No");
             if LoanRecoveries.IsEmpty then
-                Error('The Member has a running loan of ' + LoanApplication."Product Description");
+                Error('You have a running loan of ' + LoanApplication."Product Description");
         end;
         LoanProduct.Get(LoanApplication."Product Code");
         if LoanProduct."Minimum Deposit Balance" > GetMemberDeposits(LoanApplication."Member No.") then
@@ -5502,6 +5538,7 @@ codeunit 90004 ThirdPartyIntegrations
             Clear(TempResponse);
             OnlineLoanApplication.Reset();
             OnlineLoanApplication.SetRange(Status, OnlineLoanApplication.Status::Application);
+            OnlineLoanApplication.SetRange("Member No.", MemberNo);
             if OnlineLoanApplication.FindSet() then begin
                 repeat
                     Ok := EconomicSectors.Get(OnlineLoanApplication."Sector Code");
@@ -5567,7 +5604,6 @@ codeunit 90004 ThirdPartyIntegrations
                     end;
                     if STRLEN(FORMAT(Tresp1)) > 1 then
                         TempResponse.ADDTEXT(COPYSTR(FORMAT(Tresp1), 1, STRLEN(FORMAT(Tresp1)) - 1));
-                    AdjustedNet := PortalMgt.AdjustedNet(OnlineLoanApplication."Application No");
                     TempResponse.AddText('],"BridgedLoans":[');
                     Clear(Tresp1);
                     BridgedLoans.Reset();
@@ -5581,11 +5617,9 @@ codeunit 90004 ThirdPartyIntegrations
                     end;
                     if STRLEN(FORMAT(Tresp1)) > 1 then
                         TempResponse.ADDTEXT(COPYSTR(FORMAT(Tresp1), 1, STRLEN(FORMAT(Tresp1)) - 1));
-                    AdjustedNet := PortalMgt.AdjustedNet(OnlineLoanApplication."Application No");
                     TempResponse.AddText('],');
-                    TempResponse.AddText('"AdjustedNet":"' + format(AdjustedNet) + '",');
-                    OneThirdBasic := CreditPortalMgt.OneThirdBasic(OnlineLoanApplication."Application No");
-                    TempResponse.AddText('"OneThirdBasic":"' + format(OneThirdBasic) + '",');
+                    GetSalaryAppraisalResponse(OnlineLoanApplication."Application No", TempResponse);
+                    TempResponse.AddText(',');
                     TempResponse.AddText('"Status":"' + Format(OnlineLoanApplication.Status) + '"},');
                 until OnlineLoanApplication.Next() = 0;
             end;
@@ -5732,6 +5766,21 @@ codeunit 90004 ThirdPartyIntegrations
         end;
     end;
 
+    internal procedure GetSalaryAppraisalResponse(LoanNo: Code[20]; var Tresp: BigText)
+    var
+        AvailableRecovery, AdjustedNet, EstimatedRepayment, OneThirdBasic : Decimal;
+        PortalMgt: Codeunit PortalIntegrations;
+    begin
+        AvailableRecovery := PortalMgt.GetAvailableRecovery(LoanNo);
+        AdjustedNet := PortalMgt.AdjustedNet(LoanNo);
+        OneThirdBasic := PortalMgt.OneThirdBasic(LoanNo);
+        EstimatedRepayment := PortalMgt.MonthlyRepayment(LoanNo);
+        Tresp.AddText('"AvailableRecovery":' + format(AvailableRecovery) + '",');
+        Tresp.AddText('"AdjustedNet":' + format(AdjustedNet) + '",');
+        Tresp.AddText('"OneThirdBasic":' + format(OneThirdBasic) + '",');
+        Tresp.AddText('"EstimatedRepayment":' + format(EstimatedRepayment) + '"');
+    end;
+
     procedure SubmitLoanAppraisalParameter(LoanNo: Code[20]; ParameterCode: Code[20]; ParameterValue: Decimal; var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
         LoanAppraisalParameters: Record "Loan Appraisal Parameters";
@@ -5753,20 +5802,9 @@ codeunit 90004 ThirdPartyIntegrations
                     LoanAppraisalParameters.Insert();
                 end;
                 ResponseCode := '00';
-                LoanAppraisalParameters.Reset();
-                LoanAppraisalParameters.SetRange("Loan No", LoanNo);
-                if LoanAppraisalParameters.FindSet() then begin
-                    ResponseMessage.AddText('{"AppraisalParameters":[');
-                    Clear(TempResponse);
-                    repeat
-                        TempResponse.AddText('{"ParameterCode":"' + LoanAppraisalParameters."Appraisal Code" + '",');
-                        TempResponse.AddText('"Description":"' + LoanAppraisalParameters."Parameter Description" + '",');
-                        TempResponse.AddText('"Value":"' + Format(LoanAppraisalParameters."Parameter Value") + '"},');
-                    until LoanAppraisalParameters.Next() = 0;
-                    if STRLEN(FORMAT(TempResponse)) > 1 then
-                        ResponseMessage.ADDTEXT(COPYSTR(FORMAT(TempResponse), 1, STRLEN(FORMAT(TempResponse)) - 1));
-                    ResponseMessage.AddText(']}');
-                end;
+                ResponseMessage.AddText('{');
+                GetSalaryAppraisalResponse(OnlineLoanApplication."Application No", ResponseMessage);
+                ResponseMessage.AddText('}');
             end else begin
                 ResponseCode := '01';
                 ResponseMessage.AddText('{"Error":"The Loan Application does not Exist"}');
@@ -6002,9 +6040,6 @@ codeunit 90004 ThirdPartyIntegrations
         Clear(ResponseCode);
         Clear(ResponseMessage);
         if LoanApplication.get(LoanNo) then begin
-            LoanApplication.CalcFields("Principle Repayment");
-            if LoanApplication."Principle Repayment" = 0 then
-                LoansMgt.GenerateOnlineLoanRepaymentSchedule(LoanApplication);
             Principle := LoanApplication."Applied Amount";
             RunningBalance := Principle;
             ResponseMessage.AddText('{"LoanNo":"' + LoanNo + '","PrincipleAmount":"' + Format(Principle) + '","Schedule":[');
@@ -6456,9 +6491,23 @@ codeunit 90004 ThirdPartyIntegrations
         end;
     end;
 
+    internal procedure MobileLoanBlocked(MemberNo: Code[20]; ProductCode: Code[20]) Blocked: Boolean
+    var
+        MobileBlock: Record "Mobile Loan Blocking";
+    begin
+        MobileBlock.Reset();
+        MobileBlock.SetRange("Member No", MemberNo);
+        MobileBlock.SetRange("Product Code", ProductCode);
+        if MobileBlock.IsEmpty then
+            exit(false)
+        else
+            exit(true);
+    end;
+
     Procedure GetMobiLoanAppraisal(var CUSTOMER_NO: code[20]; var CHANNEL_REFERENCE: Code[20]; var REQUEST_TYPE: Code[20]; var NARRATION: code[50]; var NUMBER_OF_MONTHS: integer; var responseCode: Code[20]; var ResponseMessage: BigText)
     var
-        QualifiedAmount, MinSalary, BaseAmount, LowestAmount, NetAmount, Eligibility : Decimal;
+        monthlyPrincipalRepayment, InterestDueOnLoan, QualifiedAmount, MaxMonthluRepayment, MaxMonthlhyRepayment : Decimal;
+        maxMonthlyRepayment, AvailableSalary, EligibleAmount, MinSalary, BaseAmount, LowestAmount, NetAmount, Eligibility, Deposits : Decimal;
         SalaryCount: Integer;
         VendorLedger: Record "Vendor Ledger Entry";
         Sdate, Edate, TempSdate, EndDate : Date;
@@ -6470,7 +6519,12 @@ codeunit 90004 ThirdPartyIntegrations
         DateFilter: Text[250];
         LoanNo, ProductCode, MemberNo, PrevDocNo, CurrentDocNo : Code[20];
         CheckOffLines, CheckOffLines2 : Record "Checkoff Lines";
+        MpoaBalance, MaxAmount, Limit : Decimal;
+        LinkedProducts: Record "Loan Product Linking";
     begin
+        MpoaBalance := 0;
+        MaxAmount := 0;
+        Limit := 0;
         clear(ResponseCode);
         Clear(ResponseMessage);
         if LoanProducts.Get(REQUEST_TYPE) = false then begin
@@ -6480,45 +6534,82 @@ codeunit 90004 ThirdPartyIntegrations
         end;
         LoanProducts.Get(REQUEST_TYPE);
         if Member.Get(CUSTOMER_NO) then begin
+            LoanApplication.Reset();
+            LoanApplication.SetRange("Product Code", LoanProducts.Code);
+            LoanApplication.SetRange("Member No.", Member."Member No.");
+            LoanApplication.SetFilter("Loan Balance", '>0');
+            if LoanApplication.FindFirst() then begin
+                responseCode := '01';
+                ResponseMessage.addText('{"Error":"You have a similar product running"}');
+                exit;
+            end;
+            LinkedProducts.Reset();
+            LinkedProducts.SetRange("Product Code", LoanProducts.Code);
+            if LinkedProducts.FindSet() then begin
+                repeat
+                    LoanApplication.Reset();
+                    LoanApplication.SetRange("Product Code", LinkedProducts."Linked Product Code");
+                    LoanApplication.SetRange("Member No.", Member."Member No.");
+                    LoanApplication.SetFilter("Loan Balance", '>0');
+                    if LoanApplication.FindFirst() then begin
+                        responseCode := '01';
+                        ResponseMessage.addText('{"Error":"You have a similar product running"}');
+                        exit;
+                    end;
+                until LinkedProducts.Next() = 0;
+            end;
             if not checkMobileBankingRegistration(CUSTOMER_NO) then begin
                 ResponseCode := '01';
                 ResponseMessage.AddText('{"Error":"You are not registered for Mobile Banking"}');
                 exit;
             end;
-            if Member."Mobile Loan Blocked" then begin
+            if MobileLoanBlocked(Member."Member No.", LoanProducts.Code) then begin
                 responseCode := '01';
                 ResponseMessage.AddText('{"Error":"The Member is blocked to Access Mobile Loans"}');
                 exit;
             end;
-            Member.CalcFields("Total Deposits");
+            if Member."Date of Registration" = 0D then begin
+                responseCode := '01';
+                ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months"}');
+                exit;
+            end else begin
+                TempSdate := CalcDate('-3M', Today);
+                if Member."Date of Registration" > TempSdate then begin
+                    responseCode := '01';
+                    ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months"}');
+                    exit;
+                end;
+            end;
+            Member.CalcFields("Total Deposits", "Outstanding Loans", "Total Shares");
+            if Member."Total Shares" < 30000 then begin
+                responseCode := '01';
+                ResponseMessage.AddText('{"Error":"You Must have at least 30,000 Shares Balance"}');
+                exit;
+            end;
+            Deposits := Member."Total Deposits";
             case LoanProducts."Mobile Appraisal Type" of
                 LoanProducts."Mobile Appraisal Type"::"Deposit Multiplier":
                     begin
-                        DetailedLedger.Reset();
-                        DetailedLedger.SetRange("Vendor No.", MemberMgt.GetMemberAccount(Member."Member No.", 'DEPOSIT'));
-                        if DetailedLedger.FindSet() then begin
-                            DetailedLedger.CalcSums(Amount);
-                            QualifiedAmount := DetailedLedger.Amount * -1 * LoanProducts."Mobile Appraisal Calculator" * 0.01;
+                        MaxAmount := LoanProducts."Maximum Loan Amount";
+                        Deposits := Member."Total Deposits";
+                        Eligibility := (Deposits * 4) - Member."Outstanding Loans";
+                        if Eligibility < 0 then
+                            Eligibility := 0;
+                        LoanApplication.Reset();
+                        LoanApplication.SetRange("Product Code", LoanProducts.Code);
+                        LoanApplication.SetRange("Member No.", Member."Member No.");
+                        LoanApplication.SetFilter("Loan Balance", '>0');
+                        if LoanApplication.FindFirst() then begin
+                            LoanApplication.CalcFields("Loan Balance");
+                            MpoaBalance := LoanApplication."Loan Balance";
+                            Limit := MaxAmount - MpoaBalance;
+                            if Limit < 0 then
+                                Limit := 0;
                         end;
-                        if QualifiedAmount < 0 then
-                            QualifiedAmount := 0;
-                        //Check 3 Months
-                        TempSdate := CalcDate('-3M', Today);
-                        TempSdate := CalcDate('-CM', TempSdate);
-                        repeat
-                            VendorLedger.Reset();
-                            VendorLedger.SetRange("Member No.", Member."Member No.");
-                            VendorLedger.SetRange("Vendor No.", MemberMgt.GetMemberAccount(Member."Member No.", 'DEPOSIT'));
-                            VendorLedger.SetRange("Posting Date", TempSdate, CalcDate('CM', TempSdate));
-                            if VendorLedger.IsEmpty then begin
-                                responseCode := '01';
-                                ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months"}');
-                                exit;
-                            end;
-                            TempSdate := CalcDate('1M', TempSdate);
-                        until TempSdate >= Today;
+                        if Eligibility > Limit then
+                            Eligibility := limit;
                     end;
-                LoanProducts."Mobile Appraisal Type"::"Percent of Net Salary":
+                LoanProducts."Mobile Appraisal Type"::"Percent of Net Salary", LoanProducts."Mobile Appraisal Type"::"Percent Of Lowest Salary":
                     begin
                         ProductCode := LoanProducts.Code;
                         BaseAmount := 0;
@@ -6531,7 +6622,7 @@ codeunit 90004 ThirdPartyIntegrations
                             if LProducts."Salary Based" then begin
                                 SalaryCount := 0;
                                 CheckOffLines.Reset();
-                                CheckOffLines.SetRange("Member No", MemberNo);
+                                CheckOffLines.SetRange("Member No", Member."Member No.");
                                 CheckOffLines.SetFilter("Posting Date", DateFilter);
                                 CheckOffLines.SetRange("Upload Type", CheckOffLines."Upload Type"::Salary);
                                 CheckOffLines.SetRange(Posted, true);
@@ -6555,8 +6646,11 @@ codeunit 90004 ThirdPartyIntegrations
                                         end;
                                     until CheckOffLines.Next() = 0;
                                 end;
-                                if ((LProducts."Min. Salary Count" <> 0) AND (SalaryCount < LProducts."Min. Salary Count")) then
-                                    Error('You must have processed at least %1 salaries between %2', LProducts."Min. Salary Count", DateFilter);
+                                if ((LProducts."Min. Salary Count" <> 0) AND (SalaryCount < LProducts."Min. Salary Count")) then begin
+                                    responseCode := '01';
+                                    ResponseMessage.addText('{"Error":"You must have processed at least ' + format(LProducts."Min. Salary Count") + ' salaries between ' + DateFilter + '"}');
+                                    exit;
+                                end;
                                 case LProducts."Salary Appraisal Type" of
                                     LProducts."Salary Appraisal Type"::"Average Net":
                                         BaseAmount := BaseAmount / SalaryCount;
@@ -6564,6 +6658,19 @@ codeunit 90004 ThirdPartyIntegrations
                                         BaseAmount := LowestAmount;
                                 end;
                                 Eligibility := BaseAmount * LProducts."Salary %" * 0.01;
+                                availableSalary := 0;
+                                availableSalary := Eligibility;
+                                if LoanProducts.code = 'L20' then begin //Fosa Pride
+                                    monthlyPrincipalRepayment := ROUND(LProducts."Maximum Loan Amount" / 24, 1, '>');
+                                    interestDueOnLoan := ROUND((LProducts."Maximum Loan Amount" * GetInterestRate(ProductCode) / 12) * 0.01, 1, '>');
+                                    maxMonthlyRepayment := monthlyPrincipalRepayment + interestDueOnLoan;
+                                    IF availableSalary < maxMonthlyRepayment THEN
+                                        EligibleAmount := ROUND(availableSalary * (LProducts."Maximum Loan Amount" / maxMonthlyRepayment), 1, '<')
+                                    ELSE
+                                        EligibleAmount := LProducts."Maximum Loan Amount";
+                                    Eligibility := EligibleAmount;
+                                end else
+                                    EligibleAmount := Eligibility;
                             end;
                         end;
                     end;
@@ -6582,16 +6689,9 @@ codeunit 90004 ThirdPartyIntegrations
                 ResponseMessage.AddText('{"Error":"The Repayment Period Cannot Exceed 3 Months"}');
                 exit;
             end;
-            LoanApplication.Reset();
-            LoanApplication.SetRange("Member No.", Member."Member No.");
-            LoanApplication.SetFilter("Loan Balance", '>0');
-            LoanApplication.SetFilter("Loan Classification", '<>%1', LoanApplication."Loan Classification"::Performing);
-            if LoanApplication.FindFirst() then begin
-                responseCode := '01';
-                ResponseMessage.AddText('{"Error":"The Member has a defaulted Loan}');
-                exit;
-            end;
-            QualifiedAmount := Eligibility;
+            QualifiedAmount := EligibleAmount;
+            if ((QualifiedAmount > Deposits) and (LoanProducts."Salary Based" = false)) then
+                QualifiedAmount := Deposits;
             //Check Deposits            
             if QualifiedAmount > 150000 then
                 QualifiedAmount := 150000;
@@ -13911,16 +14011,10 @@ codeunit 90015 "Checkoff Management"
                     PostingDescription := copystr(CheckoffLines."Check No" + ':' + CheckoffLines."Member Name" + ':Suspense', 1, 50);
                     AccountNo := '';
                     AccountNo := CheckoffLines."Collections Account";
-                    if CheckoffHeader."Upload Type" = CheckoffHeader."Upload Type"::Checkoff then
-                        LineNo := JournalManagement.CreateJournalLine(
-                            GlobalAccountType::Customer, AccountNo, PostingDate, PostingDescription, PostingAmount,
-                            Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::"Checkoff Pay", LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
-                            JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8)
-                    else
-                        LineNo := JournalManagement.CreateJournalLine(
-                            GlobalAccountType::Customer, AccountNo, PostingDate, PostingDescription, PostingAmount,
-                            Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::"End Month Salary", LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
-                            JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
+                    LineNo := JournalManagement.CreateJournalLine(
+                        GlobalAccountType::Customer, AccountNo, PostingDate, PostingDescription, -1 * PostingAmount,
+                        Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::"End Month Salary", LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
+                        JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
                 end else begin
                     if CheckoffHeader."Upload Type" = CheckoffHeader."Upload Type"::Checkoff then
                         LineNo := JournalManagement.CreateJournalLine(
@@ -15465,7 +15559,7 @@ codeunit 90018 PortalIntegrations
         exit(OneThird);
     end;
 
-    procedure AvailableRecovery(LoanNo: Code[20]) Available: Decimal
+    procedure GetAvailableRecovery(LoanNo: Code[20]) Available: Decimal
     var
         LoanApplication: Record "Loan Application";
         AppraisalParameters: Record "Loan Appraisal Parameters";
