@@ -5,6 +5,47 @@ codeunit 90001 "Member Management"
 
     end;
 
+    internal procedure DrillDownPage(MemberNo: Code[20]; AsAtDate: Date)
+    var
+        VendorLedger: Page "Vendor Ledger Entries";
+        VendorLedgerRec: Record "Vendor Ledger Entry";
+        DateFilter: Text;
+    begin
+        if AsAtDate <> 0D then begin
+            DateFilter := format(DMY2Date(01, 01, Date2DMY(AsAtDate, 3))) + '..' + format(AsAtDate);
+            VendorLedgerRec.Reset();
+            VendorLedgerRec.SetRange("Member No.", MemberNo);
+            VendorLedgerRec.SetFilter("Posting Date", DateFilter);
+            VendorLedgerRec.SetRange("Member Posting Type", VendorLedgerRec."Member Posting Type"::"Non Withrawable Deposit");
+            if VendorLedgerRec.FindSet() then begin
+                Clear(VendorLedger);
+                VendorLedger.SetTableView(VendorLedgerRec);
+                VendorLedger.Run();
+            end else
+                Message('No Deposit Contribution');
+        end else
+            Message('No Deposit Contribution');
+    end;
+
+    internal procedure GetDepositsCurrYear(MemberNo: Code[20]; AsAtDate: Date) Deposits: Decimal
+    var
+        DetailedLedger: Record "Detailed Vendor Ledg. Entry";
+        DateFilter: Text;
+    begin
+        if AsAtDate <> 0D then begin
+            DateFilter := format(DMY2Date(01, 01, Date2DMY(AsAtDate, 3))) + '..' + format(AsAtDate);
+            DetailedLedger.Reset();
+            DetailedLedger.SetRange("Member No.", MemberNo);
+            DetailedLedger.SetRange("Member Posting Type", DetailedLedger."Member Posting Type"::"Non Withrawable Deposit");
+            DetailedLedger.SetFilter("Posting Date", DateFilter);
+            if DetailedLedger.FindSet() then begin
+                DetailedLedger.CalcSums(Amount);
+                Deposits := -1 * DetailedLedger.Amount;
+            end;
+        end else
+            exit(0);
+    end;
+
     procedure MaskCardNo(CardNo: Code[20]) MaskedCardNo: Code[50]
     var
         MiddlePart, StartPart, LastPart : Code[20];
@@ -1461,6 +1502,49 @@ codeunit 90002 "Loans Management"
 
     end;
 
+    procedure GetOutstandingLoans(LoanNo: Code[20]) OutstandingLoans: Decimal
+    var
+        LoanRecoveries: Record "Loan Recoveries";
+        BridgedAmount, ProratedInterest, Loans : Decimal;
+        LoanApplication, LoanApplication12 : Record "Loan Application";
+    begin
+        OutstandingLoans := 0;
+        BridgedAmount := 0;
+        ProratedInterest := 0;
+        Loans := 0;
+        if LoanApplication.Get(LoanNo) then begin
+            LoanApplication12.Reset();
+            LoanApplication12.SetRange("Member No.", LoanApplication."Member No.");
+            LoanApplication12.SetFilter("Loan Balance", '>0');
+            if LoanApplication12.FindSet() then begin
+                repeat
+                    LoanApplication12.CalcFields("Loan Balance");
+                    Loans += LoanApplication12."Loan Balance";
+                until LoanApplication12.Next() = 0;
+            end;
+            LoanRecoveries.Reset();
+            LoanRecoveries.SetRange("Loan No", LoanNo);
+            if LoanRecoveries.FindSet() then begin
+                LoanRecoveries.CalcSums(Amount, "Prorated Interest");
+                BridgedAmount := LoanRecoveries.Amount;
+            end;
+            OutstandingLoans := Loans - BridgedAmount;
+            exit(OutstandingLoans);
+        end else
+            exit(0);
+    end;
+
+    procedure GetBatchNo(LoanApplication: Record "Loan Application") BatchNo: Code[20]
+    var
+        LoanBatchLines: Record "Loan Batch Lines";
+    begin
+        BatchNo := '';
+        LoanBatchLines.Reset();
+        LoanBatchLines.SetRange("Loan No", LoanApplication."Application No");
+        if LoanBatchLines.FindFirst() then
+            exit(LoanBatchLines."Batch No");
+    end;
+
     procedure GetLoanAge(LoanNo: Code[20]; AsAtDate: Date; var DefaultedPrinciple: Decimal; var PrinciplePaid: Decimal; var PrincipleDue: Decimal; var MonthlyPrinciple: Decimal) LAge: Integer
     var
         LoanApplication: Record "Loan Application";
@@ -2778,35 +2862,37 @@ codeunit 90002 "Loans Management"
         LoanApp.SetRange("Product Code", Loan."Product Code");
         if LoanApp.FindSet() then begin
             ProductFactory.Get(LoanApp."Product Code");
-            CommissionPercent := 0;
-            CommissionPercent := ProductFactory."Discounting %";
-            LoanRecoveries.Reset();
-            LoanRecoveries.SetRange("Loan No", Loan."Application No");
-            LoanRecoveries.SetRange("Recovery Type", LoanRecoveries."Recovery Type"::Loan);
-            LoanRecoveries.SetRange("Recovery Code", LoanApp."Application No");
-            if LoanRecoveries.findfirst then begin
-                LoanRecoveries."Recovery Description" := ProductFactory.Name;
-                LoanRecoveries."Commission %" := CommissionPercent;
-                LoanRecoveries."Commission Account" := ProductFactory."Commission Account";
-                LoanApp.CalcFields("Loan Balance");
-                LoanRecoveries."Current Balance" := LoanApp."Loan Balance";
-                LoanRecoveries.Validate(Amount, LoanRecoveries."Current Balance");
-                LoanRecoveries.Modify();
-            end else begin
-                ProductFactory.Get(LoanApp."Product Code");
-                LoanRecoveries.Init();
-                LoanRecoveries."Loan No" := Loan."Application No";
-                LoanRecoveries."Recovery Type" := LoanRecoveries."Recovery Type"::Loan;
-                LoanRecoveries.Validate("Recovery Code", LoanApp."Application No");
-                ProductFactory.Get(LoanApp."Product Code");
-                LoanRecoveries."Recovery Code" := LoanApp."Application No";
-                LoanRecoveries."Recovery Description" := ProductFactory.Name;
-                LoanRecoveries."Commission %" := CommissionPercent;
-                LoanRecoveries."Commission Account" := ProductFactory."Commission Account";
-                LoanApp.CalcFields("Loan Balance");
-                LoanRecoveries."Current Balance" := LoanApp."Loan Balance";
-                LoanRecoveries.Validate(Amount, LoanRecoveries."Current Balance");
-                LoanRecoveries.Insert();
+            if ProductFactory."Max. Running Loans" <= 1 then begin
+                CommissionPercent := 0;
+                CommissionPercent := ProductFactory."Discounting %";
+                LoanRecoveries.Reset();
+                LoanRecoveries.SetRange("Loan No", Loan."Application No");
+                LoanRecoveries.SetRange("Recovery Type", LoanRecoveries."Recovery Type"::Loan);
+                LoanRecoveries.SetRange("Recovery Code", LoanApp."Application No");
+                if LoanRecoveries.findfirst then begin
+                    LoanRecoveries."Recovery Description" := ProductFactory.Name;
+                    LoanRecoveries."Commission %" := CommissionPercent;
+                    LoanRecoveries."Commission Account" := ProductFactory."Commission Account";
+                    LoanApp.CalcFields("Loan Balance");
+                    LoanRecoveries."Current Balance" := LoanApp."Loan Balance";
+                    LoanRecoveries.Validate(Amount, LoanRecoveries."Current Balance");
+                    LoanRecoveries.Modify();
+                end else begin
+                    ProductFactory.Get(LoanApp."Product Code");
+                    LoanRecoveries.Init();
+                    LoanRecoveries."Loan No" := Loan."Application No";
+                    LoanRecoveries."Recovery Type" := LoanRecoveries."Recovery Type"::Loan;
+                    LoanRecoveries.Validate("Recovery Code", LoanApp."Application No");
+                    ProductFactory.Get(LoanApp."Product Code");
+                    LoanRecoveries."Recovery Code" := LoanApp."Application No";
+                    LoanRecoveries."Recovery Description" := ProductFactory.Name;
+                    LoanRecoveries."Commission %" := CommissionPercent;
+                    LoanRecoveries."Commission Account" := ProductFactory."Commission Account";
+                    LoanApp.CalcFields("Loan Balance");
+                    LoanRecoveries."Current Balance" := LoanApp."Loan Balance";
+                    LoanRecoveries.Validate(Amount, LoanRecoveries."Current Balance");
+                    LoanRecoveries.Insert();
+                end;
             end;
         end;
     end;
@@ -5444,6 +5530,51 @@ codeunit 90004 ThirdPartyIntegrations
     end;
 
     //------------------Eclectics Requests
+    procedure GetBanks(var ResponseCode: Code[20]; var ResponseMessage: BigText)
+    var
+        Banks: Record "External Banks";
+        Branches: Record "External Bank Branches";
+    Begin
+        Banks.Reset();
+        if Banks.findset then begin
+            ResponseMessage.AddText('{"BankCode":""' + Banks."Bank Code" + '",');
+            ResponseMessage.AddText('"BankName":"' + Banks."Bank Name" + '","Branches":[');
+            Clear(temp);
+            ResponseMessage.AddText(']}');
+        end;
+    End;
+
+    internal procedure CheckMaximumRunningLoans(ProductCode: Code[20]; MemberNo: Code[20]; var CurrentLoans: Integer; var AllowedLoans: Integer; var BuyOffAmount: Decimal)
+    var
+        LoanProducts: Record "Product Factory";
+        LoanApplication: Record "Loan Application";
+    begin
+        BuyOffAmount := 0;
+        AllowedLoans := 0;
+        CurrentLoans := 0;
+        if LoanProducts.Get(ProductCode) then begin
+            AllowedLoans := LoanProducts."Max. Running Loans";
+        end;
+        if AllowedLoans > 1 then begin
+            LoanApplication.Reset();
+            LoanApplication.SetFilter("Loan Balance", '>0');
+            LoanApplication.SetRange("Member No.", MemberNo);
+            LoanApplication.SetRange("Product Code", ProductCode);
+            if LoanApplication.FindSet() then begin
+                CurrentLoans := LoanApplication.Count;
+            end;
+        end else begin
+            LoanApplication.Reset();
+            LoanApplication.SetFilter("Loan Balance", '>0');
+            LoanApplication.SetRange("Member No.", MemberNo);
+            LoanApplication.SetRange("Product Code", ProductCode);
+            if LoanApplication.FindSet() then begin
+                LoanApplication.calcFields("Loan Balance");
+                BuyOffAmount := LoanApplication."Loan Balance";
+            end;
+        end;
+    end;
+
     procedure CompleteOnlineLoanApplication(LoanNo: Code[20]; var ResponseCode: code[20]; var ResponseMessage: BigText)
     var
         OnlineLoanGuarantors: Record "Online Guarantor Requests";
@@ -5539,6 +5670,7 @@ codeunit 90004 ThirdPartyIntegrations
             OnlineLoanApplication.Reset();
             OnlineLoanApplication.SetRange(Status, OnlineLoanApplication.Status::Application);
             OnlineLoanApplication.SetRange("Member No.", MemberNo);
+            OnlineLoanApplication.setfilter(Installments, '>0');
             if OnlineLoanApplication.FindSet() then begin
                 repeat
                     Ok := EconomicSectors.Get(OnlineLoanApplication."Sector Code");
@@ -5632,11 +5764,11 @@ codeunit 90004 ThirdPartyIntegrations
         end;
     end;
 
-    procedure SubmitLoanApplication(MemberNo: Code[20]; ProductCode: Code[20]; PrincipleAmount: Decimal; Installemnts: Integer; BankCode: Code[20]; BranchCode: Code[20]; AccountName: Text[100]; AccountNo: Code[30]; SectorCode: Code[20]; SubSectorCode: Code[20]; SubSubSector: Code[20]; NewMonthlyInstallment: Decimal; var ResponseCode: Code[20]; var ResponseMessage: BigText)
+    procedure SubmitLoanApplication(MemberNo: Code[20]; ProductCode: Code[20]; PrincipleAmount: Decimal; Installemnts: Integer; BankCode: Code[20]; BranchCode: Code[20]; AccountName: Text[100]; AccountNo: Code[30]; SectorCode: Code[20]; SubSectorCode: Code[20]; SubSubSector: Code[20]; var LoanNo: Code[20]; NewMonthlyInstallment: Decimal; var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
         SaccoSetup: Record "Sacco Setup";
         NoSeries: Codeunit NoSeriesManagement;
-        LoanNo, FOSAAccount : Code[20];
+        FOSAAccount: Code[20];
         LProduct: Record "Product Factory";
         OnlineLoanApplication: Record "Online Loan Application";
         EconomicSector: Record "Economic Sectors";
@@ -5644,6 +5776,8 @@ codeunit 90004 ThirdPartyIntegrations
         SubSubSectorRec: Record "Economic Sub-subsector";
         LoansMgt: Codeunit "Loans Management";
         MemberMgt: Codeunit "Member Management";
+        CurrentLoans, AllowedLoans : Integer;
+        BuyOffAamount: Decimal;
     begin
         Clear(ResponseCode);
         Clear(ResponseMessage);
@@ -5669,40 +5803,63 @@ codeunit 90004 ThirdPartyIntegrations
             ResponseMessage.AddText('{"Error":"The Economic Sector Does Not Exist"}');
             exit;
         end;
-        OnlineLoanApplication.Reset();
-        OnlineLoanApplication.SetRange("Member No.", MemberNo);
-        OnlineLoanApplication.SetRange("Portal Status", OnlineLoanApplication."Portal Status"::New);
-        OnlineLoanApplication.SetRange("Product Code", ProductCode);
-        if OnlineLoanApplication.FindFirst() then begin
-            ResponseCode := '01';
-            ResponseMessage.AddText('{"Error":"You have a pending loan application"}');
-            exit;
+        if OnlineLoanApplication.get(LoanNo) = false then begin
+            OnlineLoanApplication."Application No" := LoanNo;
+            OnlineLoanApplication.Validate("Member No.", MemberNo);
+            OnlineLoanApplication.Validate("Product Code", ProductCode);
+            OnlineLoanApplication."Application Date" := Today;
+            OnlineLoanApplication."Posting Date" := Today;
+            OnlineLoanApplication."Repayment Start Date" := LoansMgt.GetRepaymentOnlineStartDate(OnlineLoanApplication);
+            OnlineLoanApplication.Validate(Installments, Installemnts);
+            OnlineLoanApplication.Validate("Applied Amount", PrincipleAmount);
+            OnlineLoanApplication."Approved Amount" := OnlineLoanApplication."Applied Amount";
+            OnlineLoanApplication."Source Type" := OnlineLoanApplication."Source Type"::Channels;
+            OnlineLoanApplication."Mode of Disbursement" := OnlineLoanApplication."Mode of Disbursement"::FOSA;
+            FOSAAccount := MemberMgt.GetMemberAccount(MemberNo, 'FOSA');
+            OnlineLoanApplication."Disbursement Account" := FOSAAccount;
+            OnlineLoanApplication."Sector Code" := SectorCode;
+            OnlineLoanApplication."Sub Sector Code" := SubSectorCode;
+            OnlineLoanApplication."Sub-Susector Code" := SubSubSector;
+            OnlineLoanApplication."New Monthly Installment" := NewMonthlyInstallment;
+            OnlineLoanApplication.modify;
+            LoansMgt.GenerateOnlineLoanRepaymentSchedule(OnlineLoanApplication);
+            ResponseCode := '00';
+            ResponseMessage.AddText('{"Message":"Loan Updated Successfully","LoanNo":"' + LoanNo + '"}');
+        end else begin
+            OnlineLoanApplication.Reset();
+            OnlineLoanApplication.SetRange("Member No.", MemberNo);
+            OnlineLoanApplication.SetRange("Portal Status", OnlineLoanApplication."Portal Status"::New);
+            if OnlineLoanApplication.FindFirst() then begin
+                ResponseCode := '01';
+                ResponseMessage.AddText('{"Error":"You have a pending loan application"}');
+                exit;
+            end;
+            LProduct.Get(ProductCode);
+            SaccoSetup.Get();
+            LoanNo := NoSeries.GetNextNo(SaccoSetup."Online Loan Nos.", Today, true);
+            OnlineLoanApplication.Init();
+            OnlineLoanApplication."Application No" := LoanNo;
+            OnlineLoanApplication.Validate("Member No.", MemberNo);
+            OnlineLoanApplication.Validate("Product Code", ProductCode);
+            OnlineLoanApplication."Application Date" := Today;
+            OnlineLoanApplication."Posting Date" := Today;
+            OnlineLoanApplication."Repayment Start Date" := LoansMgt.GetRepaymentOnlineStartDate(OnlineLoanApplication);
+            OnlineLoanApplication.Validate(Installments, Installemnts);
+            OnlineLoanApplication.Validate("Applied Amount", PrincipleAmount);
+            OnlineLoanApplication."Approved Amount" := OnlineLoanApplication."Applied Amount";
+            OnlineLoanApplication."Source Type" := OnlineLoanApplication."Source Type"::Channels;
+            OnlineLoanApplication."Mode of Disbursement" := OnlineLoanApplication."Mode of Disbursement"::FOSA;
+            FOSAAccount := MemberMgt.GetMemberAccount(MemberNo, 'FOSA');
+            OnlineLoanApplication."Disbursement Account" := FOSAAccount;
+            OnlineLoanApplication."Sector Code" := SectorCode;
+            OnlineLoanApplication."Sub Sector Code" := SubSectorCode;
+            OnlineLoanApplication."Sub-Susector Code" := SubSubSector;
+            OnlineLoanApplication."New Monthly Installment" := NewMonthlyInstallment;
+            OnlineLoanApplication.Insert();
+            LoansMgt.GenerateOnlineLoanRepaymentSchedule(OnlineLoanApplication);
+            ResponseCode := '00';
+            ResponseMessage.AddText('{"Message":"Loan Created Successfully","LoanNo":"' + LoanNo + '"}');
         end;
-        LProduct.Get(ProductCode);
-        SaccoSetup.Get();
-        LoanNo := NoSeries.GetNextNo(SaccoSetup."Online Loan Nos.", Today, true);
-        OnlineLoanApplication.Init();
-        OnlineLoanApplication."Application No" := LoanNo;
-        OnlineLoanApplication.Validate("Member No.", MemberNo);
-        OnlineLoanApplication.Validate("Product Code", ProductCode);
-        OnlineLoanApplication."Application Date" := Today;
-        OnlineLoanApplication."Posting Date" := Today;
-        OnlineLoanApplication."Repayment Start Date" := LoansMgt.GetRepaymentOnlineStartDate(OnlineLoanApplication);
-        OnlineLoanApplication.Validate(Installments, Installemnts);
-        OnlineLoanApplication.Validate("Applied Amount", PrincipleAmount);
-        OnlineLoanApplication."Approved Amount" := OnlineLoanApplication."Applied Amount";
-        OnlineLoanApplication."Source Type" := OnlineLoanApplication."Source Type"::Channels;
-        OnlineLoanApplication."Mode of Disbursement" := OnlineLoanApplication."Mode of Disbursement"::FOSA;
-        FOSAAccount := MemberMgt.GetMemberAccount(MemberNo, 'FOSA');
-        OnlineLoanApplication."Disbursement Account" := FOSAAccount;
-        OnlineLoanApplication."Sector Code" := SectorCode;
-        OnlineLoanApplication."Sub Sector Code" := SubSectorCode;
-        OnlineLoanApplication."Sub-Susector Code" := SubSubSector;
-        OnlineLoanApplication."New Monthly Installment" := NewMonthlyInstallment;
-        OnlineLoanApplication.Insert();
-        LoansMgt.GenerateOnlineLoanRepaymentSchedule(OnlineLoanApplication);
-        ResponseCode := '00';
-        ResponseMessage.AddText('{"Message":"Loan Created Successfully","LoanNo":"' + LoanNo + '"}');
     end;
 
     procedure SubmitBridgingLoans(LoanNo: Code[20]; BridgingLoanNo: Code[20]; var ResponseCode: Code[20]; var ResponseMessage: BigText)
@@ -5775,10 +5932,10 @@ codeunit 90004 ThirdPartyIntegrations
         AdjustedNet := PortalMgt.AdjustedNet(LoanNo);
         OneThirdBasic := PortalMgt.OneThirdBasic(LoanNo);
         EstimatedRepayment := PortalMgt.MonthlyRepayment(LoanNo);
-        Tresp.AddText('"AvailableRecovery":' + format(AvailableRecovery) + '",');
-        Tresp.AddText('"AdjustedNet":' + format(AdjustedNet) + '",');
-        Tresp.AddText('"OneThirdBasic":' + format(OneThirdBasic) + '",');
-        Tresp.AddText('"EstimatedRepayment":' + format(EstimatedRepayment) + '"');
+        Tresp.AddText('"AvailableRecovery":"' + format(AvailableRecovery) + '",');
+        Tresp.AddText('"AdjustedNet":"' + format(AdjustedNet) + '",');
+        Tresp.AddText('"OneThirdBasic":"' + format(OneThirdBasic) + '",');
+        Tresp.AddText('"EstimatedRepayment":"' + format(EstimatedRepayment) + '"');
     end;
 
     procedure SubmitLoanAppraisalParameter(LoanNo: Code[20]; ParameterCode: Code[20]; ParameterValue: Decimal; var ResponseCode: Code[20]; var ResponseMessage: BigText)
@@ -6381,6 +6538,8 @@ codeunit 90004 ThirdPartyIntegrations
         LoansMgt: Codeunit "Loans Management";
         SMSPhoneNo, SMSText : Text;
         LoanProducts: Record "Product Factory";
+        CurrentLoans, AllowedLoans : Integer;
+        BuyoffAmount: Decimal;
     begin
         Clear(ResponseMessage);
         Clear(ResponseCode);
@@ -6406,6 +6565,12 @@ codeunit 90004 ThirdPartyIntegrations
                 ResponseMessage.AddText('{"Error":"The Member Does Not have a FOSA Account"}');
                 exit;
             end;*/
+            CheckMaximumRunningLoans(LOAN_PRODUCTCODE, CUSTOMER_NO, CurrentLoans, AllowedLoans, BuyOffAmount);
+            if BuyOffAmount > TRANSACTION_AMOUNT then begin
+                ResponseCode := '01';
+                ResponseMessage.AddText('{"Error":"You Can only apply more than KSh.' + format(BuyOffAmount) + '"}');
+                exit;
+            end;
             MemberNumber := Member."Member No.";
             FOSAAccount := MemberMgt.GetMemberAccount(MemberNumber, 'FOSA');
             if FOSAAccount = 'PHILIPAYEKO' then begin
@@ -6508,7 +6673,7 @@ codeunit 90004 ThirdPartyIntegrations
     var
         monthlyPrincipalRepayment, InterestDueOnLoan, QualifiedAmount, MaxMonthluRepayment, MaxMonthlhyRepayment : Decimal;
         maxMonthlyRepayment, AvailableSalary, EligibleAmount, MinSalary, BaseAmount, LowestAmount, NetAmount, Eligibility, Deposits : Decimal;
-        SalaryCount: Integer;
+        SalaryCount, CurrentLoans, AllowedLoans : Integer;
         VendorLedger: Record "Vendor Ledger Entry";
         Sdate, Edate, TempSdate, EndDate : Date;
         MobileMembers: Record "Mobile Members";
@@ -6519,7 +6684,7 @@ codeunit 90004 ThirdPartyIntegrations
         DateFilter: Text[250];
         LoanNo, ProductCode, MemberNo, PrevDocNo, CurrentDocNo : Code[20];
         CheckOffLines, CheckOffLines2 : Record "Checkoff Lines";
-        MpoaBalance, MaxAmount, Limit : Decimal;
+        MpoaBalance, MaxAmount, Limit, BuyOffAmount : Decimal;
         LinkedProducts: Record "Loan Product Linking";
     begin
         MpoaBalance := 0;
@@ -6534,6 +6699,12 @@ codeunit 90004 ThirdPartyIntegrations
         end;
         LoanProducts.Get(REQUEST_TYPE);
         if Member.Get(CUSTOMER_NO) then begin
+            CheckMaximumRunningLoans(LoanProducts.Code, Member."Member No.", CurrentLoans, AllowedLoans, BuyOffAmount);
+            if (CurrentLoans + 1) > AllowedLoans then begin
+                responseCode := '01';
+                ResponseMessage.addText('{"Error":"You Can Only have a Maximum of ' + format(AllowedLoans) + '"}');
+                exit;
+            end;
             LoanApplication.Reset();
             LoanApplication.SetRange("Product Code", LoanProducts.Code);
             LoanApplication.SetRange("Member No.", Member."Member No.");
@@ -8587,7 +8758,7 @@ codeunit 90004 ThirdPartyIntegrations
         ATMTransactions."Transaction Time" := TIME;
         ATMTransactions."Transaction Date" := TODAY;
         ATMTransactions.Source := 0;
-        ATMTransactions.Reversed := FALSE;
+        ATMTransactions.Reversed := (Reversed <> '');
         ATMTransactions."Reversed Posted" := FALSE;
         ATMTransactions."Reversal Trace ID" := ReversalTraceID;
         ATMTransactions."Transaction Description" := transactionDescription;
@@ -8611,6 +8782,12 @@ codeunit 90004 ThirdPartyIntegrations
                 ATMTransactions."Transaction Type Charges" := ATMTransactions."Transaction Type Charges"::"POS - Cash Deposit";
             'VISA NORMAL PURCHASE':
                 ATMTransactions."Transaction Type Charges" := ATMTransactions."Transaction Type Charges"::"VISA Normal Purchase";
+            'PESALINK VISA':
+                ATMTransactions."Transaction Type Charges" := ATMTransactions."Transaction Type Charges"::"PESALINK VISA";
+            'PESALINK POS':
+                ATMTransactions."Transaction Type Charges" := ATMTransactions."Transaction Type Charges"::"PESALINK POS";
+            'PESALINK ATM':
+                ATMTransactions."Transaction Type Charges" := ATMTransactions."Transaction Type Charges"::"PESALINK ATM";
             else begin
                     ResponseCode := '01';
                     ResponseMessage.AddText('{"Error":"Please Pass the correct transaction type"}');
