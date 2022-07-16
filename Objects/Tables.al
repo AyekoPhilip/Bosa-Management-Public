@@ -9799,6 +9799,16 @@ table 90084 "Mobile Transsactions"
         field(13; Narration; Text[100]) { }
         field(14; "Utility Code"; Code[20]) { }
         field(15; "Posted On"; DateTime) { }
+        field(16; "Credit Member Name"; Text[200])
+        {
+            fieldclass = flowfield;
+            CalcFormula = lookup(Members."Full Name" where("Member No." = field("Cr_Member No")));
+        }
+        field(17; "Debit Member Name"; Text[200])
+        {
+            fieldclass = flowfield;
+            CalcFormula = lookup(Members."Full Name" where("Member No." = field("Dr_Member No")));
+        }
     }
     keys
     {
@@ -13299,49 +13309,50 @@ table 90123 "Mobile Loan Blocking"
 table 90124 "Appraisal Documents"
 {
     DataClassification = ToBeClassified;
-    
+
     fields
     {
-        field(1;"Employer Code"; Code[20])
+        field(1; "Employer Code"; Code[20])
         {
             DataClassification = ToBeClassified;
-            
+
         }
-        field(2;"Line No";Integer){
+        field(2; "Line No"; Integer)
+        {
             autoincrement = true;
         }
-        field(3;"Document Description";Text[250]){}
+        field(3; "Document Description"; Text[250]) { }
     }
-    
+
     keys
     {
-        key(Key1; "Employer Code","Line No")
+        key(Key1; "Employer Code", "Line No")
         {
             Clustered = true;
         }
     }
-    
+
     var
         myInt: Integer;
-    
+
     trigger OnInsert()
     begin
-        
+
     end;
-    
+
     trigger OnModify()
     begin
-        
+
     end;
-    
+
     trigger OnDelete()
     begin
-        
+
     end;
-    
+
     trigger OnRename()
     begin
-        
+
     end;
-    
+
 }

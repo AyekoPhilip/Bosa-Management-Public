@@ -12590,8 +12590,10 @@ page 90157 "Mobile Transactions"
                 field("Document No"; Rec."Document No") { }
                 field("Transaction Type"; rec."Transaction Type") { }
                 field("Cr_Member No"; Rec."Cr_Member No") { }
+                field("Credit Member Name"; "Credit Member Name") { }
                 field("Cr_Account No"; Rec."Cr_Account No") { }
                 field("Dr_Member No"; Rec."Dr_Member No") { }
+                field("Debit Member Name"; "Debit Member Name") { }
                 field("Dr_Account No"; Rec."Dr_Account No") { }
                 field(Amount; Rec.Amount) { }
                 field(Narration; rec.Narration) { }
@@ -20897,7 +20899,6 @@ page 90279 "Guarantor Requests"
     UsageCategory = Lists;
     SourceTable = "Online Guarantor Requests";
     InsertAllowed = false;
-    DeleteAllowed = false;
     ModifyAllowed = false;
     SourceTableView = where("Request Type" = const(Guarantor));
     layout
