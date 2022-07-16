@@ -590,6 +590,7 @@ table 90001 "Product Factory"
         }
         field(81; "Special Loan Multiplier"; Boolean) { }
         field(82; "Cash Transfer Allowed"; Boolean) { }
+        field(83; "Max. Running Loans"; Integer) { }
 
     }
 
@@ -7490,6 +7491,26 @@ table 90058 "ATM Types"
             tablerelation = "SACCO Transaction Types";
         }
         Field(27; "ATM Cards"; Integer) { }
+        Field(28; "PESALINK Visa T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(29; "PESALINK ATM T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(30; "PESALINK POS T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(31; "POS Deposit T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(32; "ATM Deposit T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
     }
 
     keys
@@ -7802,7 +7823,7 @@ table 90061 "ATM Transactions"
         Field(20; "Trace ID"; Code[20]) { }
         Field(22; "Transaction Type Charges"; Option)
         {
-            OptionMembers = "Balance Enquiry","Mini Statement","Cash Withdrawal - Coop ATM","Cash Withdrawal - VISA ATM","Reversal","Utility Payment","POS - Normal Purchase","M-PESA Withdrawal","Airtime Purchase","POS - School Payment","POS - Purchase With Cash Back","POS - Cash Deposit","POS - Benefit Cash Withdrawal","POS - Cash Deposit to Card","POS - M Banking","POS - Cash Withdrawal","POS - Balance Enquiry","POS - Mini Statement","ATM Deposit","VISA Normal Purchase";
+            OptionMembers = "Balance Enquiry","Mini Statement","Cash Withdrawal - Coop ATM","Cash Withdrawal - VISA ATM","Reversal","Utility Payment","POS - Normal Purchase","M-PESA Withdrawal","Airtime Purchase","POS - School Payment","POS - Purchase With Cash Back","POS - Cash Deposit","POS - Benefit Cash Withdrawal","POS - Cash Deposit to Card","POS - M Banking","POS - Cash Withdrawal","POS - Balance Enquiry","POS - Mini Statement","ATM Deposit","VISA Normal Purchase","PESALINK VISA","PESALINK POS","PESALINK ATM";
         }
         Field(23; "Card Acceptor Terminal ID	"; Code[20]) { }
         Field(24; "ATM Card No"; Code[20]) { }
@@ -13273,4 +13294,54 @@ table 90123 "Mobile Loan Blocking"
 
     end;
 
+}
+
+table 90124 "Appraisal Documents"
+{
+    DataClassification = ToBeClassified;
+    
+    fields
+    {
+        field(1;"Employer Code"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+            
+        }
+        field(2;"Line No";Integer){
+            autoincrement = true;
+        }
+        field(3;"Document Description";Text[250]){}
+    }
+    
+    keys
+    {
+        key(Key1; "Employer Code","Line No")
+        {
+            Clustered = true;
+        }
+    }
+    
+    var
+        myInt: Integer;
+    
+    trigger OnInsert()
+    begin
+        
+    end;
+    
+    trigger OnModify()
+    begin
+        
+    end;
+    
+    trigger OnDelete()
+    begin
+        
+    end;
+    
+    trigger OnRename()
+    begin
+        
+    end;
+    
 }

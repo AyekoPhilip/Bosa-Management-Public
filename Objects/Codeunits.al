@@ -5530,6 +5530,13 @@ codeunit 90004 ThirdPartyIntegrations
     end;
 
     //------------------Eclectics Requests
+    procedure GetMandatoryUploadDocuments(EmployerCode: Code[20]; var ResponseCode: Code[20]; var ResponseMessage: BigText)
+    var
+        LoanDocuments: Record "Appraisal Documents";
+    begin
+        LoanDocuments.reset;
+    end;
+
     procedure GetBanks(var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
         Banks: Record "External Banks";
@@ -5539,7 +5546,16 @@ codeunit 90004 ThirdPartyIntegrations
         if Banks.findset then begin
             ResponseMessage.AddText('{"BankCode":""' + Banks."Bank Code" + '",');
             ResponseMessage.AddText('"BankName":"' + Banks."Bank Name" + '","Branches":[');
-            Clear(temp);
+            Branches.Reset;
+            Branches.SetRange("Bank Code", Banks."Bank Code");
+            if Branches.findset then begin
+                repeat
+                    TempResponse.AddText('{"BranchCode":"' + Branches."Branch Code" + '",');
+                    TempResponse.AddText('"BranchName":"' + Branches."Branch Name" + '"},');
+                until Branches.Next() = 0;
+                if STRLEN(FORMAT(TempResponse)) > 1 then
+                    TempResponse.ADDTEXT(COPYSTR(FORMAT(TempResponse), 1, STRLEN(FORMAT(TempResponse)) - 1));
+            end;
             ResponseMessage.AddText(']}');
         end;
     End;
@@ -6197,9 +6213,10 @@ codeunit 90004 ThirdPartyIntegrations
         Clear(ResponseCode);
         Clear(ResponseMessage);
         if LoanApplication.get(LoanNo) then begin
+            ResponseCode := '00';
             Principle := LoanApplication."Applied Amount";
             RunningBalance := Principle;
-            ResponseMessage.AddText('{"LoanNo":"' + LoanNo + '","PrincipleAmount":"' + Format(Principle) + '","Schedule":[');
+            ResponseMessage.AddText('{"LoanNo":"' + LoanNo + '","AppliedPrincipleAmount":"' + Format(Principle) + '","Schedule":[');
             LoanSchedule.Reset();
             LoanSchedule.SetRange("Loan No.", LoanApplication."Application No");
             if LoanSchedule.FindSet() then begin
@@ -8502,7 +8519,7 @@ codeunit 90004 ThirdPartyIntegrations
         IF Member.GET(MemberNo) THEN BEGIN
             IF Member."E-Mail Address" = '' THEN
                 Member."E-Mail Address" := 'phi';
-            ResponseMessage.ADDTEXT('{"MemberNo":"' + Member."Member No." + '","DateOfRegistration":"' + format(Member."Date of Registration") + '","FullName":"' + Member."Full Name" + '","NationalIDNo":"' + Member."National ID No" + '","PhoneNo":"' + Member."Mobile Phone No." + '","Email":"' + Member."E-Mail Address" + '","Accounts":[');
+            ResponseMessage.ADDTEXT('{"MemberNo":"' + Member."Member No." + '","DateOfRegistration":"' + format(Member."Date of Registration") + '","FullName":"' + Member."Full Name" + '","NationalIDNo":"' + Member."National ID No" + '","PhoneNo":"' + Member."Mobile Phone No." + '","EmployerCode":"' + Member."Employer Code" + '","Email":"' + Member."E-Mail Address" + '","Accounts":[');
             Vendor.RESET;
             Vendor.SETRANGE("Member No.", Member."Member No.");
             Vendor.SetFilter("Account Class", '<%1', Vendor."Account Class"::Loan);

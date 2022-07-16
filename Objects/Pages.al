@@ -344,6 +344,7 @@ page 90004 "Product Card"
                 }
                 group(Disbursements)
                 {
+                    field("Max. Running Loans"; "Max. Running Loans") { }
                     field("Disbursal Method"; Rec."Disbursal Method") { }
                     field("Disbursement Account"; Rec."Disbursement Account") { }
                 }
@@ -365,6 +366,10 @@ page 90004 "Product Card"
                     field("Mobile Appraisal Type"; "Mobile Appraisal Type") { }
                     field("Mobile Appraisal Calculator"; "Mobile Appraisal Calculator") { }
                 }
+            }
+            part("Loan Documents"; "Loan Documents")
+            {
+                SubPageLink = "Employer Code" = field(Code);
             }
         }
     }
@@ -4123,6 +4128,15 @@ page 90043 "Loan Details Factbox"
                 field("Application No"; Rec."Application No") { }
                 field("Member No."; Rec."Member No.") { }
                 field("Member Name"; Rec."Member Name") { }
+                field("Deposits To Date"; DepositsToDate)
+                {
+                    Editable = false;
+                    Style = Strong;
+                    trigger OnDrillDown()
+                    begin
+                        MemberMgt.DrillDownPage("Member No.", "Application Date");
+                    end;
+                }
                 field("Total Recoveries"; "Total Recoveries") { }
                 group(Appraisal)
                 {
@@ -4179,6 +4193,14 @@ page 90043 "Loan Details Factbox"
 
     var
         Portal: Codeunit PortalIntegrations;
+        MemberMgt: Codeunit "Member Management";
+        DepositsToDate: Decimal;
+
+    trigger OnAfterGetRecord()
+    begin
+        DepositsToDate := 0;
+        DepositsToDate := MemberMgt.GetDepositsCurrYear("Member No.", "Application Date");
+    end;
 }
 
 page 90044 "Collateral Releases"
@@ -4393,7 +4415,7 @@ page 90046 "Loans Lookup"
             {
                 field("Application No"; Rec."Application No") { }
                 field("Application Date"; Rec."Application Date") { }
-                field("Loan Batch No."; "Loan Batch No.") { }
+                field("Loan Batch No."; BatchNo) { }
                 field("Posting Date"; "Posting Date") { }
                 field("Repayment Start Date"; "Repayment Start Date") { }
                 field(Installments; Installments) { }
@@ -4465,10 +4487,11 @@ page 90046 "Loans Lookup"
     end;
 
     var
-        GlobalDocumentNo: code[20];
+        GlobalDocumentNo, BatchNo : code[20];
         GlobalDocumentType: option "Loan Batch";
         LoanApplication: record "Loan Application";
         LoanBatchLines: record "Loan Batch Lines";
+        LoansMgt: Codeunit "Loans Management";
 
     trigger OnQueryClosePage(CloseAction: Action) Success: Boolean
     var
@@ -4495,6 +4518,12 @@ page 90046 "Loans Lookup"
                 until LoanApplication.Next() = 0;
             end
         end
+    end;
+
+    trigger OnAfterGetRecord()
+    begin
+        BatchNo := '';
+        BatchNo := LoansMgt.GetBatchNo(Rec);
     end;
 }
 
@@ -8883,6 +8912,9 @@ page 90108 "ATM Types Card"
                 }
                 group("POS Transaction Charges")
                 {
+                    field("ATM Deposit T. Code (Normal)"; "ATM Deposit T. Code (Normal)") { }
+                    field("PESALINK ATM T. Code (Normal)"; "PESALINK ATM T. Code (Normal)") { }
+                    field("PESALINK Visa T. Code (Normal)"; "PESALINK Visa T. Code (Normal)") { }
                     field("POS Balance Enquiry T. Code"; Rec."POS Balance Enquiry T. Code") { }
                     field("POS Benefit CW T. Code"; Rec."POS Benefit CW T. Code") { }
                     field("POS Card Deposit T. Code"; Rec."POS Card Deposit T. Code") { }
@@ -22385,6 +22417,24 @@ page 90301 "Mobile Loan Block"
             {
                 field("Product Code"; "Product Code") { }
                 field("Product Name"; "Product Name") { }
+            }
+        }
+    }
+}
+page 90302 "Loan Documents"
+{
+    PageType = ListPart;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Appraisal Documents";
+
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Document Description"; "Document Description") { }
             }
         }
     }

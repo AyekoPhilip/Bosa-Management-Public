@@ -619,6 +619,7 @@ report 90005 "Loan Appraisal"
                  Check.FormatNoText(AmountInWords, Net, '');*/
                 if QualifiedAmount > "Loan Application"."Applied Amount" then
                     QualifiedAmount := "Loan Application"."Applied Amount";
+                "Total Loans" := LoansManagement.GetOutstandingLoans("Application No");
                 if "Loan Application"."Appraisal Commited" = false then begin
                     if ((LoanProduct."Appraise with 0 Deposits") AND (NewNet > OneThird)) then begin
                         "Loan Application"."Recommended Amount" := "Loan Application"."Applied Amount";
@@ -4199,6 +4200,7 @@ report 90043 "FOSA Appraisal"
                 LoanRecoveries: Record "Loan Recoveries";
             begin
                 MaxCredit := 0;
+                "Total Loans" := LoansManagement.GetOutstandingLoans("Application No");
                 "Loan Application".Validate("Insurance Amount");
                 LoansManagement.GetDepositBoostAmount("Loan Application"."Application No");
                 PayrollNo := '';
@@ -4955,24 +4957,38 @@ report 90050 "Progression Report"
     {
         dataitem(Vendor; Vendor)
         {
-            RequestFilterFields = "Vendor Posting Group", "Member No.", "Date Filter";
+            RequestFilterFields = "Vendor Posting Group", "Member No.";
             DataItemTableView = where("Member No." = filter(<> ''));
             column(Member_No_; "Member No.") { }
             column(No_; "No.") { }
             column(Name; Name) { }
             column(Search_Name; "Search Name") { }
+            column(Run_Year; Year) { }
+            column(OpeningBalance; OpeningBalance) { }
             dataitem("Vendor Ledger Entry"; "Vendor Ledger Entry")
             {
-                DataItemLink = "Vendor No." = field("No."), "Posting Date" = field("Date Filter");
+                DataItemLink = "Vendor No." = field("No.");
                 DataItemTableView = sorting("Entry No.");
                 column(Posting_Date; "Posting Date") { }
                 column(Amount; Amount) { }
+                trigger OnPreDataItem()
+                begin
+                    SetFilter("Posting Date", DateFilter);
+                end;
             }
             trigger OnAfterGetRecord()
             begin
-                DateFilter := Vendor.GetFilter("Date Filter");
-                if DateFilter = '' then
-                    Error('Please Fill a date range');
+                DateFilter := '..' + Format(DMY2Date(31, 12, Year - 1));
+                OpeningBalance := 0;
+                DetailedLedger.Reset();
+                DetailedLedger.SetFilter("Posting Date", DateFilter);
+                DetailedLedger.SetRange("Vendor No.", "No.");
+                if DetailedLedger.FindSet() then begin
+                    DetailedLedger.CalcSums(Amount);
+                    OpeningBalance := -1 * DetailedLedger.Amount;
+                end;
+                DateFilter := '';
+                DateFilter := Format(DMY2Date(1, 1, Year)) + '..' + Format(DMY2Date(31, 12, Year));
             end;
         }
     }
@@ -4983,9 +4999,9 @@ report 90050 "Progression Report"
         {
             area(Content)
             {
-                group(GroupName)
+                group("Report Parameters")
                 {
-
+                    field(Year; Year) { }
                 }
             }
         }
@@ -5005,6 +5021,11 @@ report 90050 "Progression Report"
 
     var
         DateFilter: Text;
+        DetailedLedger: Record "Detailed Vendor Ledg. Entry";
+        DateRec: Record Date;
+        OpeningBalance: Decimal;
+        LowerLimit: Date;
+        Year: Integer;
 }
 report 90051 "Underpaid Principle"
 {
