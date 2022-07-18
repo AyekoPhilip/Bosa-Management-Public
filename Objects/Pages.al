@@ -19481,6 +19481,7 @@ page 90260 "Checkoff Variation(RO)"
     UsageCategory = Administration;
     SourceTable = "Checkoff Variation Header";
 
+
     layout
     {
         area(Content)
@@ -19549,6 +19550,7 @@ page 90261 "Checkoff Advice"
                 field("Advice Type"; "Advice Type") { }
                 field("Amount Off"; "Amount Off") { }
                 field("Amount On"; "Amount On") { }
+                field("Current Balance"; "Current Balance") { }
             }
         }
         area(Factboxes)
@@ -21725,6 +21727,8 @@ page 90288 "Submitted Checkoff Variations"
     SourceTable = "Checkoff Variation Header";
     SourceTableView = where(Processed = const(false), "Portal Status" = const(Submitted));
     CardPageId = "Checkoff Variation";
+    //processed =true;
+
     layout
     {
         area(Content)

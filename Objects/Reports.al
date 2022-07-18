@@ -4752,41 +4752,41 @@ report 90049 "Gen. Loan Defaulters"
         dataitem("Loan Application"; "Loan Application")
         {
             RequestFilterFields = "Date Filter", "Member No.", "Application No", "Application Date";
-            column(Application_No; "Application No") { }
-            column(Installments; Installments) { }
-            column(Loan_Classification; "Loan Classification") { }
-            column(Deposits; Deposits) { }
-            column(Member_No_; "Member No.") { }
-            column(Member_Name; "Member Name") { }
-            column(EmployerName; EmployerName) { }
-            column(Posting_Date; "Posting Date") { }
-            column(Last_Pay_Date; "Last Pay Date") { }
-            column(Repayment_End_Date; "Repayment End Date") { }
-            column(Approved_Amount; "Approved Amount") { }
-            column(Loan_Balance; "Loan Balance") { }
-            column(GroupSortingOrder; GroupSortingOrder) { }
-            column(Product_Code; "Product Code") { }
-            column(Product_Description; "Product Description") { }
-            column("CompanyLogo"; CompanyInformation.Picture) { }
-            column("CompanyName"; CompanyInformation.Name) { }
             column("CompanyAddress1"; CompanyInformation.Address) { }
             column("CompanyAddress2"; CompanyInformation."Address 2") { }
-            column("CompanyPhone"; CompanyInformation."Phone No.") { }
             column("CompanyEmail"; CompanyInformation."E-Mail") { }
-            column(RemainingPeriod; RemainingPeriod) { }
-            column(Principle_Balance; "Principle Balance") { }
-            column(LoanAge; LoanAge) { }
-            column(Principle_Paid; PrinciplePaid) { }
-            column(Interest_Arrears; "Interest Arrears") { }
-            column(Employer_Code; "Employer Code") { }
-            column(Monthly_Principle; "Monthly Principle") { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
             column(AgeingGroup; AgeingGroup) { }
-            column(Staff_No; "Staff No") { }
+            column(Application_No; "Application No") { }
+            column(Approved_Amount; "Approved Amount") { }
+            column(Deposits; Deposits) { }
+            column(Employer_Code; "Employer Code") { }
+            column(EmployerName; EmployerName) { }
             column(Filters; Filters) { }
+            column(GroupSortingOrder; GroupSortingOrder) { }
+            column(Installments; Installments) { }
+            column(Interest_Arrears; "Interest Arrears") { }
             column(Interest_Rate; "Interest Rate") { }
-            column(Rate_Type; "Interest Repayment Method") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
+            column(Loan_Balance; "Loan Balance") { }
+            column(Loan_Classification; "Loan Classification") { }
+            column(LoanAge; LoanAge) { }
+            column(Member_Name; "Member Name") { }
+            column(Member_No_; "Member No.") { }
+            column(Monthly_Principle; "Monthly Principle") { }
             column(MonthlyPrinciple; MonthlyPrinciple) { }
+            column(Posting_Date; "Posting Date") { }
+            column(Principle_Balance; "Principle Balance") { }
+            column(Principle_Paid; PrinciplePaid) { }
             column(PrincipleDue; PrincipleDue) { }
+            column(Product_Code; "Product Code") { }
+            column(Product_Description; "Product Description") { }
+            column(Rate_Type; "Interest Repayment Method") { }
+            column(RemainingPeriod; RemainingPeriod) { }
+            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Staff_No; "Staff No") { }
             trigger OnPreDataItem()
             begin
                 Filters := "Loan Application".GetFilters;
@@ -5048,6 +5048,97 @@ report 90051 "Underpaid Principle"
         RemainingPeriod, GroupSortingOrder : Integer;
         AsAtDate: Date;
         LoanAge: Integer;
+
+}
+report 91000 "Loan Checkoff Analysis"
+{
+    UsageCategory = ReportsAndAnalysis;
+    ApplicationArea = All;
+    RDLCLayout = '.\Loan Management\Credit Reports\LoanCheckoffAnalysis.rdl';
+    DefaultLayout = rdlc;
+
+
+
+    dataset
+    {
+        dataitem("CheckoffAdvice"; "Checkoff Advice")
+        {
+            RequestFilterFields = "Advice Type", "Employer Code", "Member No";
+
+            column(PayrollNo; PayrollNo) { }
+            column(MemberName; MemberName) { }
+            column(Member_Name; "Member Name") { }
+            column(Amount_Off; "Amount Off") { }
+            column(Amount_On; "Amount On") { }
+            column("CompanyLogo"; CompanyInfo.Picture) { }
+            column("CompanyName"; CompanyInfo.Name) { }
+            column("CompanyAddress1"; CompanyInfo.Address) { }
+            column("CompanyAddress2"; CompanyInfo."Address 2") { }
+            column("CompanyPhone"; CompanyInfo."Phone No.") { }
+            column("CompanyEmail"; CompanyInfo."E-Mail") { }
+            column(Product_Name; "Product Name") { }
+            column(Product_Type; "Product Type") { }
+
+
+            trigger OnPreDataItem()
+            begin
+                CompanyInfo.get();
+                CompanyInfo.CalcFields(Picture);
+                CheckoffAdvice.CalcFields("Member Name");
+            end;
+
+            trigger OnAfterGetRecord()
+            begin
+                Member.reset;
+                Member.SetRange(Member."Member No.", CheckoffAdvice."Member No");
+                if Member.findset then begin
+                    PayrollNo := Member."Payroll No";
+
+                end;
+            end;
+
+
+            trigger OnPostDataItem()
+            begin
+
+            end;
+
+        }
+    }
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+
+
+    var
+        CompanyInfo: record "Company Information";
+        Member: record Members;
+        PayrollNo: Text[50];
+        MemberName: Text[250];
+
 
 }
 
