@@ -15,6 +15,7 @@ tableextension 90008 "Company Info. Ext" extends "Company Information"
 tableextension 90009 VendorExt extends Vendor
 {
     LookupPageId = "Vendor Lookup Custom";
+
     fields
     {
         // Add changes to table fields here
@@ -65,7 +66,7 @@ tableextension 90009 VendorExt extends Vendor
     }
     keys
     {
-        key(BOSA; "Member No.") { }
+        key(BOSA; "Member No.", "Account Class") { }
     }
 
     var

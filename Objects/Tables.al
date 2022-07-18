@@ -178,6 +178,11 @@ table 90000 "Sacco Setup"
         {
             TableRelation = "Product Factory" where("Product Type" = const("Loan Account"));
         }
+        field(46; "Reg. Fee"; Decimal) { }
+        field(47; "Reg. Fee Account"; Code[20])
+        {
+            TableRelation = "G/L Account";
+        }
     }
 
     keys
@@ -590,6 +595,7 @@ table 90001 "Product Factory"
         }
         field(81; "Special Loan Multiplier"; Boolean) { }
         field(82; "Cash Transfer Allowed"; Boolean) { }
+        field(83; "Max. Running Loans"; Integer) { }
 
     }
 
@@ -1504,6 +1510,8 @@ table 90008 "Members"
             TableRelation = "User Setup";
         }
         field(75; "Guarantee Blocked"; Boolean) { }
+        field(76; "Reg. Fee Paid"; Boolean) { }
+
 
     }
 
@@ -2716,7 +2724,8 @@ table 90015 "Loan Application"
         {
             trigger OnValidate()
             begin
-                "New Monthly Installment" := LoansManagement.PopulateMinimumContribution("Application No");
+                if xRec."New Monthly Installment" < LoansManagement.PopulateMinimumContribution("Application No") then
+                    "New Monthly Installment" := LoansManagement.PopulateMinimumContribution("Application No");
             end;
         }
         field(70; "Pay to Bank Code"; Code[20])
@@ -2796,7 +2805,7 @@ table 90015 "Loan Application"
         field(87; "Monthly Principle"; Decimal)
         {
             FieldClass = FlowField;
-            CalcFormula = max("Loan Schedule"."Principle Repayment" where("Loan No." = field("Application No")));
+            CalcFormula = max("Loan Schedule"."Principle Repayment" where("Loan No." = field("Application No"), "Expected Date" = Field("Date Filter")));
             Editable = false;
         }
         field(88; Rescheduled; Boolean) { }
@@ -2826,6 +2835,31 @@ table 90015 "Loan Application"
         field(95; "Qualified Salarywise"; Decimal)
         {
             Editable = false;
+        }
+        field(96; "Last Pay Date"; Date)
+        {
+            FieldClass = FlowField;
+            CalcFormula = max("Vendor Ledger Entry"."Posting Date" where("Loan No." = field("Application No"), "Vendor No." = field("Loan Account"), "Transaction Type" = filter("Interest Paid" | "Principle Paid")));
+            Editable = false;
+        }
+        field(97; "Staff No"; Code[20])
+        {
+            FieldClass = FlowField;
+            CalcFormula = lookup(Members."Payroll No" where("Member No." = field("Member No.")));
+            Editable = false;
+        }
+        field(98; "Employer Code"; Code[20])
+        {
+            TableRelation = "Employer Codes";
+            FieldClass = FlowField;
+            CalcFormula = lookup(members."Employer Code" where("Member No." = field("Member No.")));
+            Editable = false;
+        }
+        field(99; "Principle Balance - At Date"; Decimal)
+        {
+            Editable = false;
+            FieldClass = FlowField;
+            CalcFormula = sum("Detailed Vendor Ledg. Entry".Amount where("Vendor No." = field("Loan Account"), "Loan No." = field("Application No"), "Transaction Type" = filter("Loan Disbursal" | "Principle Paid")));
         }
     }
 
@@ -7463,6 +7497,26 @@ table 90058 "ATM Types"
             tablerelation = "SACCO Transaction Types";
         }
         Field(27; "ATM Cards"; Integer) { }
+        Field(28; "PESALINK Visa T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(29; "PESALINK ATM T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(30; "PESALINK POS T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(31; "POS Deposit T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        Field(32; "ATM Deposit T. Code (Normal)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
     }
 
     keys
@@ -7775,7 +7829,7 @@ table 90061 "ATM Transactions"
         Field(20; "Trace ID"; Code[20]) { }
         Field(22; "Transaction Type Charges"; Option)
         {
-            OptionMembers = "Balance Enquiry","Mini Statement","Cash Withdrawal - Coop ATM","Cash Withdrawal - VISA ATM","Reversal","Utility Payment","POS - Normal Purchase","M-PESA Withdrawal","Airtime Purchase","POS - School Payment","POS - Purchase With Cash Back","POS - Cash Deposit","POS - Benefit Cash Withdrawal","POS - Cash Deposit to Card","POS - M Banking","POS - Cash Withdrawal","POS - Balance Enquiry","POS - Mini Statement","ATM Deposit","VISA Normal Purchase";
+            OptionMembers = "Balance Enquiry","Mini Statement","Cash Withdrawal - Coop ATM","Cash Withdrawal - VISA ATM","Reversal","Utility Payment","POS - Normal Purchase","M-PESA Withdrawal","Airtime Purchase","POS - School Payment","POS - Purchase With Cash Back","POS - Cash Deposit","POS - Benefit Cash Withdrawal","POS - Cash Deposit to Card","POS - M Banking","POS - Cash Withdrawal","POS - Balance Enquiry","POS - Mini Statement","ATM Deposit","VISA Normal Purchase","PESALINK VISA","PESALINK POS","PESALINK ATM";
         }
         Field(23; "Card Acceptor Terminal ID	"; Code[20]) { }
         Field(24; "ATM Card No"; Code[20]) { }
@@ -9751,6 +9805,16 @@ table 90084 "Mobile Transsactions"
         field(13; Narration; Text[100]) { }
         field(14; "Utility Code"; Code[20]) { }
         field(15; "Posted On"; DateTime) { }
+        field(16; "Credit Member Name"; Text[200])
+        {
+            fieldclass = flowfield;
+            CalcFormula = lookup(Members."Full Name" where("Member No." = field("Cr_Member No")));
+        }
+        field(17; "Debit Member Name"; Text[200])
+        {
+            fieldclass = flowfield;
+            CalcFormula = lookup(Members."Full Name" where("Member No." = field("Dr_Member No")));
+        }
     }
     keys
     {
@@ -12085,7 +12149,8 @@ table 90113 "Checkoff Advice"
 table 90114 "Mobile Applications"
 {
     DataClassification = ToBeClassified;
-
+    LookupPageId = "Mobile Applications Lookup";
+    DrillDownPageId = "Mobile Applications Lookup";
     fields
     {
         field(1; "Document No"; Code[20])
@@ -12117,7 +12182,7 @@ table 90114 "Mobile Applications"
         {
             Editable = false;
         }
-        field(4; "Phone No"; Code[11])
+        field(4; "Phone No"; Code[20])
         {
             Editable = false;
         }
@@ -12947,6 +13012,12 @@ table 90119 "Online Loan Application"
             CalcFormula = sum("Detailed Vendor Ledg. Entry".Amount WHERE("Vendor No." = field("Loan Account"), "Transaction Type" = const("Loan Disbursal"), "Loan No." = field("Application No"), "Posting Date" = field("Date Filter")));
             Editable = false;
         }
+        field(95; "Principle Balance - At Date"; Decimal)
+        {
+            Editable = false;
+            FieldClass = FlowField;
+            CalcFormula = sum("Detailed Vendor Ledg. Entry".Amount where("Vendor No." = field("Loan Account"), "Loan No." = field("Application No"), "Transaction Type" = filter("Loan Disbursal" | "Principle Paid")));
+        }
     }
 
     keys
@@ -13101,6 +13172,281 @@ table 90121 "Loan Recovey Accounts"
             if LoanRecovery."Guarantor Deposit Recovery" + LoanRecovery."Guarantor Liability Recovery" > 0 then
                 Error('You Cannot combine Member Recovery and Guarantor Recovery');
         end;
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+
+table 90122 "Loan Product Linking"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Product Code"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Linked Product Code"; Code[20])
+        {
+            TableRelation = "Product Factory";
+            trigger OnValidate()
+            var
+                Products: Record "Product Factory";
+            begin
+                if Products.Get("Linked Product Code") then
+                    "Linked Product Name" := Products.Name;
+            end;
+        }
+        field(3; "Linked Product Name"; Text[100])
+        {
+            Editable = false;
+        }
+    }
+
+    keys
+    {
+        key(Key1; "Product Code", "Linked Product Code")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+table 90123 "Mobile Loan Blocking"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Member No"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Product Code"; Code[20])
+        {
+            TableRelation = "Product Factory" where("Mobile Loan" = const(true));
+            trigger OnValidate()
+            var
+                Products: Record "Product Factory";
+            begin
+                if Products.Get("Product Code") then
+                    "Product Name" := Products.Name;
+            end;
+        }
+        field(3; "Product Name"; Text[100])
+        {
+            Editable = false;
+        }
+    }
+
+    keys
+    {
+        key(Key1; "Member No", "Product Code")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+
+table 90124 "Appraisal Documents"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Employer Code"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Line No"; Integer)
+        {
+            autoincrement = true;
+        }
+        field(3; "Document Description"; Text[250]) { }
+    }
+
+    keys
+    {
+        key(Key1; "Employer Code", "Line No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+table 90125 "Online Reversals"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Document No"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Created On"; DateTime) { }
+        field(3; "Created By"; Code[100]) { }
+        field(4; "Processed On"; DateTime) { }
+        field(5; Processed; Boolean) { }
+    }
+
+    keys
+    {
+        key(Key1; "Document No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+
+table 90126 "Job Execution Entries"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Entry No"; Integer)
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Run Date"; DateTime) { }
+        field(3; "Document No"; Code[20]) { }
+        field(4; "Member No"; Code[20]) { }
+        field(5; "Task Type"; Option)
+        {
+            OptionMembers = "Loan SMS","Share Transfer","Entrance Fee","Loan Recovery","ATM Post","Mobile Post";
+        }
+        field(6; "Transactions Count"; Integer) { }
+    }
+
+    keys
+    {
+        key(Key1; "Entry No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
     end;
 
     trigger OnModify()
