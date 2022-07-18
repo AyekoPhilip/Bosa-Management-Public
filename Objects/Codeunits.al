@@ -536,55 +536,6 @@ codeunit 90001 "Member Management"
         BulkSMSHeader.Modify();
     end;
 
-    procedure TransferShareCapital(MemberNo: code[20])
-    var
-        SharesBalance, MinimumBalance, CurrentBalance, DepositBalance, Diffrence, PostingAmount : Decimal;
-        Member: Record Members;
-        Vendor, Vendor2 : Record Vendor;
-        ProductType: Record "Product Factory";
-        LoansMgt: Codeunit "Loans Management";
-        JournalManagement: Codeunit "Journal Management";
-        LineNo: Integer;
-        PostingDescription: Text[50];
-        JournalTemplate, JournalBatch, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, AccountNo, DocumentNo, ReasonCode, SourceCode, ExternalDocumentNo : code[20];
-        PostingDate: Date;
-    begin
-        JournalBatch := 'TRNSF';
-        JournalTemplate := 'SACCO';
-        LineNo := JournalManagement.PrepareJournal(JournalTemplate, JournalBatch, 'Minimum Share Capital');
-        if Member.get(MemberNo) then begin
-            DocumentNo := Format(Today);
-            PostingDate := Today;
-            DepositBalance := LoansMgt.GetMemberDeposits(MemberNo);
-            SharesBalance := LoansMgt.GetMemberShares(MemberNo);
-            MinimumBalance := 5000;
-            Diffrence := MinimumBalance - SharesBalance;
-            if Diffrence < 0 then
-                Diffrence := 0;
-            if ((Vendor.get(GetMemberAccount(MemberNo, 'DEPOSIT'))) AND (Vendor.get(GetMemberAccount(MemberNo, 'SHARES')))) then begin
-                if DepositBalance > Diffrence then begin
-                    LineNo := JournalManagement.PrepareJournal(JournalTemplate, JournalBatch, 'Share Transfers');
-                    //Debit Provision Account                                
-                    PostingAmount := 0;
-                    PostingAmount := Diffrence;
-                    PostingDescription := 'Share Transfer';
-                    AccountNo := '';
-                    AccountNo := GetMemberAccount(MemberNo, 'DEPOSIT');
-                    LineNo := JournalManagement.CreateJournalLine(
-                        GlobalAccountType::Vendor, AccountNo, PostingDate, PostingDescription, PostingAmount,
-                        Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::General, LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
-                        JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
-                    AccountNo := GetMemberAccount(MemberNo, 'SHARE');
-                    LineNo := JournalManagement.CreateJournalLine(
-                        GlobalAccountType::Vendor, AccountNo, PostingDate, PostingDescription, -1 * PostingAmount,
-                        Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::General, LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
-                        JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
-                    JournalManagement.CompletePosting(JournalBatch, JournalTemplate);
-                end;
-            end;
-        end;
-    end;
-
     procedure OpenAccounts(DocumentNo: Code[20]) AccNo: Code[20]
     var
         AccountOpenning: Record "Account Openning";
@@ -1265,7 +1216,7 @@ codeunit 90001 "Member Management"
                     GenJournalLine.TestField("Member Posting Type");
                     if (GenJournalLine."Transaction Type" IN [GenJournalLine."Transaction Type"::"Penalty Due", GenJournalLine."Transaction Type"::"Penalty Paid", GenJournalLine."Transaction Type"::"Loan Disbursal", GenJournalLine."Transaction Type"::"Interest Due", GenJournalLine."Transaction Type"::"Interest Paid",
                          GenJournalLine."Transaction Type"::"Principle Paid"]) = false then
-                        Error('The Transaction type %1 is not allowed for loan account!', GenJournalLine."Transaction Type");
+                        Error('The Transaction type %1 doc %2 is not allowed for loan account!', GenJournalLine."Transaction Type", GenJournalLine."Document No.");
                 end;
                 if Vendor."Account Type" = Vendor."Account Type"::Sacco then begin
                     GenJournalLine.TestField("Member No.");
@@ -7347,9 +7298,9 @@ codeunit 90004 ThirdPartyIntegrations
     procedure InterMemberTransfer(Var DEBIT_ACCOUNT_NUMBER: Code[20]; var CREDIT_ACCOUNT_NUMBER: Code[20]; var CHANNEL_REFERENCE: code[20]; var REQUEST_TYPE: code[20]; var TRANSACTION_AMOUNT: Decimal; var CREDIT_ACCOUNT_CURRENCY: code[20]; var NARRATION: text[50]; var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
         LoanApplication: Record "Loan Application";
-        isLoan:Boolean;   
+        isLoan: Boolean;
         EntryNo: Integer;
-                
+
         Vendor: record Vendor;
         MobileTransactions: Record "Mobile Transsactions";
         CrMember, DrMember, CrAccount, DrAccount : Code[20];
@@ -7395,7 +7346,7 @@ codeunit 90004 ThirdPartyIntegrations
                 CrMember := LoanApplication."Member No.";
                 CrAccount := LoanApplication."Application No";
                 isLoan := true;
-             ResponseCode := '01';
+                ResponseCode := '01';
                 ResponseMessage.AddText('{"Error":"The Credit Account Does Not Exist"}');
                 exit;
             end;
@@ -7419,7 +7370,7 @@ codeunit 90004 ThirdPartyIntegrations
         if isLoan then
             MobileTransactions."Transaction Type" := '900'
         else
-        MobileTransactions."Transaction Type" := '301';
+            MobileTransactions."Transaction Type" := '301';
         MobileTransactions."Document No" := CHANNEL_REFERENCE;
         MobileTransactions."Dr_Account No" := DrAccount;
         MobileTransactions."Dr_Member No" := DrMember;
@@ -8002,9 +7953,14 @@ codeunit 90004 ThirdPartyIntegrations
         MobileTransactions: Record "Mobile Transsactions";
         MobileTransactionsSetup: Record "Mobile Transaction Setup";
         PostingDescription: Text[50];
-        Dim1, Dim2, Dim3, Dim4, DIm5, Dim6, DIm7, Dim8, JournalBatch, JournalTemplate, DocumentNo : code[20];
+        Dim1, Dim2, Dim3, Dim4, DIm5, Dim6, DIm7, Dim8, JournalBatch, JournalTemplate, DocumentNo, DebitAccount : code[20];
         LineNo: Integer;
         PostingDate: Date;
+        InterestBalance, PrincipleBalance, BaseAmount, InterestPaid, PrinciplePaid, DepositRefund : Decimal;
+        LoanApplication: Record "Loan Application";
+        MemberMgt: Codeunit "Member Management";
+        JobExecEntries: Record "Job Execution Entries";
+        All: Integer;
     begin
         JournalBatch := 'ITL-MOBI';
         JournalTemplate := 'SACCO';
@@ -8014,6 +7970,7 @@ codeunit 90004 ThirdPartyIntegrations
         MobileTransactions.SetCurrentKey("Entry No");
         MobileTransactions.SetAscending("Entry No", false);
         if MobileTransactions.FindSet() then begin
+            All := MobileTransactions.Count;
             repeat
                 DocumentNo := MobileTransactions."Document No";
                 if CheckPostOk(DocumentNo) then begin
@@ -8025,38 +7982,42 @@ codeunit 90004 ThirdPartyIntegrations
                                     PostingDescription := MobileTransactions.Narration;
                                     if PostingDescription = '' then
                                         PostingDescription := CopyStr('Mobile Deposit ' + DocumentNo, 1, 50);
-                                    //Debit Balancing Account                                    
-                                    LineNo := JournalManagement.CreateJournalLine(
-                                        GlobalAccountType::"Bank Account",
-                                        MobileTransactionsSetup."Balancing Account No",
-                                        PostingDate,
-                                        PostingDescription,
-                                        MobileTransactions.Amount,
-                                        Dim1, Dim2,
-                                        MobileTransactions."Cr_Member No",
-                                        DocumentNo,
-                                        GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
-                                        MobileTransactions."Cr_Member No",
-                                        JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
-                                    LineNo := JournalManagement.CreateJournalLine(
-                                        GlobalAccountType::Vendor,
-                                        MobileTransactions."Cr_Account No",
-                                        PostingDate,
-                                        PostingDescription,
-                                        -1 * MobileTransactions.Amount,
-                                        Dim1, Dim2,
-                                        MobileTransactions."Cr_Member No",
-                                        DocumentNo,
-                                        GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
-                                        MobileTransactions."Cr_Member No",
-                                        JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
-                                    LineNo := JournalManagement.AddCharges(MobileTransactionsSetup."Charge Code",
-                                        MobileTransactions."Cr_Account No",
-                                        MobileTransactions.Amount,
-                                        LineNo,
-                                        DocumentNo,
-                                        MobileTransactions."Cr_Member No",
-                                        'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
+                                    if Vendor.get(MobileTransactions."Cr_Account No") then begin
+                                        if Vendor."Account Class" <> Vendor."Account Class"::Loan then begin
+                                            //Debit Balancing Account                                    
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::"Bank Account",
+                                                MobileTransactionsSetup."Balancing Account No",
+                                                PostingDate,
+                                                PostingDescription,
+                                                MobileTransactions.Amount,
+                                                Dim1, Dim2,
+                                                MobileTransactions."Cr_Member No",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
+                                                MobileTransactions."Cr_Member No",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                MobileTransactions."Cr_Account No",
+                                                PostingDate,
+                                                PostingDescription,
+                                                -1 * MobileTransactions.Amount,
+                                                Dim1, Dim2,
+                                                MobileTransactions."Cr_Member No",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
+                                                MobileTransactions."Cr_Member No",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.AddCharges(MobileTransactionsSetup."Charge Code",
+                                                MobileTransactions."Cr_Account No",
+                                                MobileTransactions.Amount,
+                                                LineNo,
+                                                DocumentNo,
+                                                MobileTransactions."Cr_Member No",
+                                                'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
+                                        end;
+                                    end;
                                 end;
                             '200'://Cash Withdrawal
                                 begin
@@ -8103,39 +8064,42 @@ codeunit 90004 ThirdPartyIntegrations
                                     PostingDescription := MobileTransactions.Narration;
                                     if PostingDescription = '' then
                                         PostingDescription := CopyStr('Mobile Transfer ' + DocumentNo, 1, 50);
-                                        
-                                    //Debit Balancing Account                                    
-                                    LineNo := JournalManagement.CreateJournalLine(
-                                        GlobalAccountType::Vendor,
-                                        MobileTransactions."Dr_Account No",
-                                        PostingDate,
-                                        PostingDescription,
-                                        MobileTransactions.Amount,
-                                        Dim1, Dim2,
-                                        MobileTransactions."Dr_Member No",
-                                        DocumentNo,
-                                        GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
-                                        MobileTransactions."Cr_Member No",
-                                        JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
-                                    LineNo := JournalManagement.CreateJournalLine(
-                                        GlobalAccountType::Vendor,
-                                        MobileTransactions."Cr_Account No",
-                                        PostingDate,
-                                        PostingDescription,
-                                        -1 * MobileTransactions.Amount,
-                                        Dim1, Dim2,
-                                        MobileTransactions."Cr_Member No",
-                                        DocumentNo,
-                                        GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
-                                        MobileTransactions."Cr_Member No",
-                                        JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
-                                    LineNo := JournalManagement.AddCharges(MobileTransactionsSetup."Charge Code",
-                                        MobileTransactions."Dr_Account No",
-                                        MobileTransactions.Amount,
-                                        LineNo,
-                                        DocumentNo,
-                                        MobileTransactions."Dr_Member No",
-                                        'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
+                                    if Vendor.get(MobileTransactions."Cr_Account No") then begin
+                                        if Vendor."Account Class" <> Vendor."Account Class"::Loan then begin
+                                            //Debit Balancing Account                                    
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                MobileTransactions."Dr_Account No",
+                                                PostingDate,
+                                                PostingDescription,
+                                                MobileTransactions.Amount,
+                                                Dim1, Dim2,
+                                                MobileTransactions."Dr_Member No",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
+                                                MobileTransactions."Cr_Member No",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                MobileTransactions."Cr_Account No",
+                                                PostingDate,
+                                                PostingDescription,
+                                                -1 * MobileTransactions.Amount,
+                                                Dim1, Dim2,
+                                                MobileTransactions."Cr_Member No",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
+                                                MobileTransactions."Cr_Member No",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.AddCharges(MobileTransactionsSetup."Charge Code",
+                                                MobileTransactions."Dr_Account No",
+                                                MobileTransactions.Amount,
+                                                LineNo,
+                                                DocumentNo,
+                                                MobileTransactions."Dr_Member No",
+                                                'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
+                                        end;
+                                    end;
                                 end;
                             '301'://Inter Member Transfer   
                                 begin
@@ -8143,38 +8107,42 @@ codeunit 90004 ThirdPartyIntegrations
                                     if PostingDescription = '' then
                                         PostingDescription := CopyStr('Mobile Transfer ' + DocumentNo, 1, 50);
                                     PostingDate := DT2Date(MobileTransactions."Created On");
-                                    //Debit Balancing Account                                    
-                                    LineNo := JournalManagement.CreateJournalLine(
-                                        GlobalAccountType::Vendor,
-                                        MobileTransactions."Dr_Account No",
-                                        PostingDate,
-                                        PostingDescription,
-                                        MobileTransactions.Amount,
-                                        Dim1, Dim2,
-                                        MobileTransactions."Dr_Member No",
-                                        DocumentNo,
-                                        GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
-                                        MobileTransactions."Cr_Member No",
-                                        JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
-                                    LineNo := JournalManagement.CreateJournalLine(
-                                        GlobalAccountType::Vendor,
-                                        MobileTransactions."Cr_Account No",
-                                        PostingDate,
-                                        PostingDescription,
-                                        -1 * MobileTransactions.Amount,
-                                        Dim1, Dim2,
-                                        MobileTransactions."Cr_Member No",
-                                        DocumentNo,
-                                        GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
-                                        MobileTransactions."Cr_Member No",
-                                        JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
-                                    LineNo := JournalManagement.AddCharges(MobileTransactionsSetup."Charge Code",
-                                        MobileTransactions."Dr_Account No",
-                                        MobileTransactions.Amount,
-                                        LineNo,
-                                        DocumentNo,
-                                        MobileTransactions."Dr_Member No",
-                                        'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
+                                    if Vendor.get(MobileTransactions."Cr_Account No") then begin
+                                        if Vendor."Account Class" <> Vendor."Account Class"::Loan then begin
+                                            //Debit Balancing Account                                    
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                MobileTransactions."Dr_Account No",
+                                                PostingDate,
+                                                PostingDescription,
+                                                MobileTransactions.Amount,
+                                                Dim1, Dim2,
+                                                MobileTransactions."Dr_Member No",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
+                                                MobileTransactions."Cr_Member No",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                MobileTransactions."Cr_Account No",
+                                                PostingDate,
+                                                PostingDescription,
+                                                -1 * MobileTransactions.Amount,
+                                                Dim1, Dim2,
+                                                MobileTransactions."Cr_Member No",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Cash Deposit", LineNo, 'MOBI', 'MOBI',
+                                                MobileTransactions."Cr_Member No",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.AddCharges(MobileTransactionsSetup."Charge Code",
+                                                MobileTransactions."Dr_Account No",
+                                                MobileTransactions.Amount,
+                                                LineNo,
+                                                DocumentNo,
+                                                MobileTransactions."Dr_Member No",
+                                                'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
+                                        end;
+                                    end;
                                 end;
                             '400'://Airtime Purchase  
                                 begin
@@ -8373,6 +8341,82 @@ codeunit 90004 ThirdPartyIntegrations
                                         'MOBI', 'MOBI', MobileTransactions."Cr_Member No", JournalBatch, JournalTemplate, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, PostingDate, True);
 
                                 end;
+                            '900'://Loan Repayment
+                                begin
+                                    DebitAccount := MobileTransactions."Dr_Account No";
+                                    BaseAmount := MobileTransactions.Amount;
+                                    if Vendor.get(DebitAccount) then begin
+                                        if LoanApplication.Get(MobileTransactions."Cr_Account No") then begin
+                                            LoanApplication.CalcFields("Principle Balance", "Interest Balance");
+                                            InterestBalance := LoanApplication."Interest Balance";
+                                            PrincipleBalance := LoanApplication."Principle Balance";
+                                            if InterestBalance < BaseAmount then begin
+                                                InterestPaid := InterestBalance;
+                                                BaseAmount -= InterestPaid;
+                                            end else begin
+                                                InterestPaid := BaseAmount;
+                                                BaseAmount := 0;
+                                            end;
+                                            if PrincipleBalance > BaseAmount then begin
+                                                PrinciplePaid := BaseAmount;
+                                                BaseAmount := 0;
+                                            end else begin
+                                                PrinciplePaid := PrincipleBalance;
+                                                DepositRefund := BaseAmount - PrinciplePaid;
+                                            end;
+                                            PostingDescription := 'Interest Paid';
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                LoanApplication."Loan Account",
+                                                PostingDate,
+                                                PostingDescription,
+                                                -1 * InterestPaid,
+                                                Dim1, Dim2,
+                                                LoanApplication."Member No.",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Interest Paid", LineNo, LoanApplication."Product Code", LoanApplication."Application No",
+                                                LoanApplication."Member No.",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                Vendor."No.",
+                                                PostingDate,
+                                                PostingDescription,
+                                                InterestPaid,
+                                                Dim1, Dim2,
+                                                LoanApplication."Member No.",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Interest Paid", LineNo, LoanApplication."Product Code", LoanApplication."Application No",
+                                                LoanApplication."Member No.",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            PostingDescription := 'Principle Paid';
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                LoanApplication."Loan Account",
+                                                PostingDate,
+                                                PostingDescription,
+                                                -1 * PrinciplePaid,
+                                                Dim1, Dim2,
+                                                LoanApplication."Member No.",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Principle Paid", LineNo, LoanApplication."Product Code", LoanApplication."Application No",
+                                                LoanApplication."Member No.",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                            LineNo := JournalManagement.CreateJournalLine(
+                                                GlobalAccountType::Vendor,
+                                                Vendor."No.",
+                                                PostingDate,
+                                                PostingDescription,
+                                                PrinciplePaid,
+                                                Dim1, Dim2,
+                                                LoanApplication."Member No.",
+                                                DocumentNo,
+                                                GlobalTransactionType::"Principle Paid", LineNo, LoanApplication."Product Code", LoanApplication."Application No",
+                                                LoanApplication."Member No.",
+                                                JournalTemplate, JournalBatch, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8);
+                                        end;
+                                    end;
+                                end;
                         end;
                     end;
                     JournalManagement.CompletePosting(JournalTemplate, JournalBatch);
@@ -8386,6 +8430,19 @@ codeunit 90004 ThirdPartyIntegrations
                 end;
             until MobileTransactions.Next() = 0;
         end;
+        JobExecEntries.Reset();
+        if JobExecEntries.FindLast() then
+            LineNo := JobExecEntries."Entry No" + 1
+        else
+            LineNo := 1;
+        JobExecEntries.Init();
+        JobExecEntries."Document No" := Format(Today);
+        JobExecEntries."Entry No" := LineNo;
+        JobExecEntries."Member No" := LoanApplication."Member No.";
+        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Mobile Post";
+        JobExecEntries."Run Date" := CurrentDateTime;
+        JobExecEntries."Transactions Count" := All;
+        JobExecEntries.Insert();
     end;
 
     internal procedure CheckPostOk(DocumentNo: Code[20]) PostOk: Boolean
@@ -8483,9 +8540,10 @@ codeunit 90004 ThirdPartyIntegrations
         exit(Rate);
     end;
 
-    procedure LoanRepaymentRequest(var CUSTOMER_NO: code[20]; var LOAN_PRODUCTCODE: Code[20]; var CHANNEL_REFERENCE: code[20]; var REQUEST_TYPE: Code[20]; var TRANSACTION_AMOUNT: Decimal; var NARRATION: Code[50]; var ResponseCode: code[20]; var ResponseMessage: BigText)
+    procedure LoanRepaymentRequest(var CUSTOMER_NO: code[20]; var LOAN_PRODUCTCODE: Code[20]; var CHANNEL_REFERENCE: code[20]; var DEBIT_ACCOUNT: Code[20]; var REQUEST_TYPE: Code[20]; var TRANSACTION_AMOUNT: Decimal; var NARRATION: Code[50]; var ResponseCode: code[20]; var ResponseMessage: BigText)
     var
         MobileTransactions: record "Mobile Transsactions";
+        Vendor: Record Vendor;
         EntryNo: integer;
         LoanApplication: record "Loan Application";
         BalanceBefore, BalanceAfter, Charges : Decimal;
@@ -8496,6 +8554,19 @@ codeunit 90004 ThirdPartyIntegrations
             EntryNo := MobileTransactions."Entry No" + 1
         else
             EntryNo := 1;
+        if DEBIT_ACCOUNT = '' then begin
+            ResponseCode := '01';
+            ResponseMessage.AddText('{"Error":"The Debit Account Does NOT Exist"}');
+            exit;
+        end;
+        IF NOT Vendor.GET(DEBIT_ACCOUNT) then begin
+            ResponseCode := '01';
+            ResponseMessage.AddText('{"Error":"The Debit Account Does NOT Exist"}');
+            exit;
+        end;
+        Vendor.GET(DEBIT_ACCOUNT);
+        DrMember := Vendor."Member No.";
+        DrAccount := Vendor."No.";
         MobileTransactions.Reset();
         MobileTransactions.SetRange("Document No", CHANNEL_REFERENCE);
         if MobileTransactions.FindFirst() then begin
@@ -8510,8 +8581,6 @@ codeunit 90004 ThirdPartyIntegrations
         if LoanApplication.Get(LOAN_PRODUCTCODE) then begin
             LoanApplication.CalcFields("Loan Balance");
             BalanceBefore := LoanApplication."Loan Balance";
-            DrMember := 'LOAN';
-            DrAccount := 'LOAN';
         end else begin
             ResponseCode := '01';
             ResponseMessage.AddText('{"Error":"The Credit Account Does Not Exist"}');
@@ -8522,6 +8591,7 @@ codeunit 90004 ThirdPartyIntegrations
             ResponseMessage.AddText('{"Error":"Please Provide Transaction Amount"}');
             exit;
         end;
+
         BalanceAfter := BalanceBefore - Charges - TRANSACTION_AMOUNT;
         MobileTransactions.INIT;
         MobileTransactions."Entry No" := EntryNo;
@@ -8716,6 +8786,8 @@ codeunit 90004 ThirdPartyIntegrations
         GLEntry: Record "G/L Entry";
         ReversalEntry: Record "Reversal Entry";
         LoanApplication: Record "Loan Application";
+        OnlineReversals: Record "Online Reversals";
+        ok: Boolean;
     begin
         CLEAR(responseCode);
         CLEAR(responseMessage);
@@ -8743,8 +8815,13 @@ codeunit 90004 ThirdPartyIntegrations
                 responseCode := '00';
                 responseMessage.ADDTEXT('Successfully Reversed ' + requestID);
             END ELSE BEGIN
-                responseCode := '01';
-                responseMessage.ADDTEXT('{"Response":"Document No not found for Reversal"}');
+                responseCode := '00';
+                responseMessage.ADDTEXT('Successfully Reversed ' + requestID);
+                OnlineReversals.Init();
+                OnlineReversals."Document No" := RequestID;
+                OnlineReversals."Created By" := UserId;
+                OnlineReversals."Created On" := CurrentDateTime;
+                ok := OnlineReversals.Insert();
             END;
             LoanApplication.RESET;
             LoanApplication.SetRange("Cheque No.", RequestID);
@@ -9027,14 +9104,34 @@ codeunit 90004 ThirdPartyIntegrations
     internal procedure PostATMTransactions()
     var
         ATMTransactions: Record "ATM Transactions";
+        JobExecEntries: Record "Job Execution Entries";
+        LineNo: Integer;
+        All: Integer;
+        Vendor: Record Vendor;
     begin
         ATMTransactions.Reset();
         ATMTransactions.SetRange(Posted, false);
         if ATMTransactions.FindSet() then begin
+            All := ATMTransactions.Count;
             repeat
-                PostATMTransaction(ATMTransactions."Reference No");
+                if Vendor.get(ATMTransactions."Account No") then
+                    PostATMTransaction(ATMTransactions."Reference No");
             until ATMTransactions.Next() = 0;
         end;
+
+        JobExecEntries.Reset();
+        if JobExecEntries.FindLast() then
+            LineNo := JobExecEntries."Entry No" + 1
+        else
+            LineNo := 1;
+        JobExecEntries.Init();
+        JobExecEntries."Document No" := Format(Today);
+        JobExecEntries."Entry No" := LineNo;
+        JobExecEntries."Member No" := 'ATM';
+        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Mobile Post";
+        JobExecEntries."Run Date" := CurrentDateTime;
+        JobExecEntries."Transactions Count" := All;
+        JobExecEntries.Insert();
     end;
 
     internal procedure PostATMTransaction(TransactionNo: code[20])
@@ -16168,6 +16265,204 @@ codeunit 90020 "Scheduled Activities"
 
     end;
 
+    procedure RecoverEntranceFee()
+    var
+        SaccoSetup: Record "Sacco Setup";
+        EntranceFee, DepositBalance, PostingAmount : decimal;
+        Members: Record Members;
+        MemberMgt: Codeunit "Member Management";
+        LoansMgt: Codeunit "Loans Management";
+        DepositAccount: Code[20];
+        PostingDate: Date;
+        JournalBatch, JournalTemplate, DocumentNo, MemberNo, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, SourceCode, ReasonCode, ExternalDocumentNo : Code[20];
+        LineNo: Integer;
+        JournalManagement: Codeunit "Journal Management";
+        PostingDescription: Text[50];
+    begin
+        SaccoSetup.Get();
+        if ((SaccoSetup."Reg. Fee" > 0) and (SaccoSetup."Reg. Fee Account" <> '')) then begin
+            EntranceFee := SaccoSetup."Reg. Fee";
+            Members.Reset();
+            Members.SetRange("Reg. Fee Paid", false);
+            if Members.FindSet() then begin
+                repeat
+                    MemberNo := '';
+                    MemberNo := Members."Member No.";
+                    JobExecEntries.Reset();
+                    JobExecEntries.SetRange("Document No", Format(Today));
+                    JobExecEntries.SetRange("Member No", MemberNo);
+                    JobExecEntries.SetRange("Task Type", JobExecEntries."Task Type"::"Share Transfer");
+                    if JobExecEntries.IsEmpty then begin
+                        DepositBalance := 0;
+                        DepositAccount := '';
+                        DepositAccount := MemberMgt.GetMemberAccount(Members."Member No.", 'DEPOSIT');
+                        DepositBalance := LoansMgt.GetMemberDeposits(Members."Member No.");
+                        if DepositBalance >= EntranceFee then begin
+                            PostingAmount := EntranceFee;
+                            PostingDate := Today;
+                            JournalBatch := 'E-FEE';
+                            JournalTemplate := 'SACCO';
+                            LineNo := JournalManagement.PrepareJournal(JournalTemplate, JournalBatch, 'Entrance Fee');
+                            //Debit Provision Account
+                            MemberNo := Members."Member No.";
+                            PostingDescription := 'Entrance Fee Recovery ' + MemberNo;
+                            LineNo := JournalManagement.CreateJournalLine(
+                                GlobalAccountType::Vendor, DepositAccount, PostingDate, PostingDescription, PostingAmount,
+                                Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::General, LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
+                                JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
+                            LineNo := JournalManagement.CreateJournalLine(
+                                GlobalAccountType::"G/L Account", SaccoSetup."Reg. Fee Account", PostingDate, PostingDescription, -1 * PostingAmount,
+                                Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::General, LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
+                                JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
+                            JournalManagement.CompletePosting(JournalTemplate, JournalBatch);
+                            Members."Reg. Fee Paid" := true;
+                            Members.Modify();
+                        end;
+                        JobExecEntries.Reset();
+                        if JobExecEntries.FindLast() then
+                            LineNo := JobExecEntries."Entry No" + 1
+                        else
+                            LineNo := 1;
+                        JobExecEntries.Init();
+                        JobExecEntries."Document No" := Format(Today);
+                        JobExecEntries."Entry No" := LineNo;
+                        JobExecEntries."Member No" := MemberNo;
+                        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Share Transfer";
+                        JobExecEntries."Run Date" := CurrentDateTime;
+                        JobExecEntries.Insert();
+                    end;
+                until Members.Next() = 0;
+            end;
+        end;
+    end;
+
+    procedure TransferShareCapital()
+    var
+        SaccoSetup: Record "Sacco Setup";
+        MinimumShares, DepositBalance, PostingAmount, SharesBalance : decimal;
+        Members: Record Members;
+        MemberMgt: Codeunit "Member Management";
+        LoansMgt: Codeunit "Loans Management";
+        DepositAccount: Code[20];
+        PostingDate: Date;
+        SharesAccount, JournalBatch, JournalTemplate, DocumentNo, MemberNo, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, SourceCode, ReasonCode, ExternalDocumentNo : Code[20];
+        LineNo: Integer;
+        JournalManagement: Codeunit "Journal Management";
+        PostingDescription: Text[50];
+        ProductFactory: Record "Product Factory";
+    begin
+        ProductFactory.Reset();
+        ProductFactory.SetRange("Share Capital", true);
+        if ProductFactory.FindFirst() then
+            SharesBalance := ProductFactory."Minimum Balance";
+        Members.Reset();
+        Members.SetRange("Reg. Fee Paid", true);
+        if Members.FindSet() then begin
+            repeat
+                MemberNo := '';
+                MemberNo := Members."Member No.";
+                JobExecEntries.Reset();
+                JobExecEntries.SetRange("Document No", Format(Today));
+                JobExecEntries.SetRange("Member No", MemberNo);
+                JobExecEntries.SetRange("Task Type", JobExecEntries."Task Type"::"Share Transfer");
+                if JobExecEntries.IsEmpty then begin
+                    DepositBalance := 0;
+                    DepositAccount := '';
+                    DepositAccount := MemberMgt.GetMemberAccount(Members."Member No.", 'DEPOSIT');
+                    DepositBalance := LoansMgt.GetMemberDeposits(Members."Member No.");
+                    SharesAccount := '';
+                    SharesAccount := MemberMgt.GetMemberAccount(Members."Member No.", 'SHARES');
+                    SharesBalance := LoansMgt.GetMemberShares(Members."Member No.");
+                    if ((DepositBalance >= MinimumShares) AND (SharesBalance < MinimumShares) and (SharesAccount <> '') and (DepositAccount <> '')) then begin
+                        PostingAmount := MinimumShares - SharesBalance;
+                        PostingDate := Today;
+                        JournalBatch := 'S-TRANS';
+                        JournalTemplate := 'SACCO';
+                        LineNo := JournalManagement.PrepareJournal(JournalTemplate, JournalBatch, 'Shares Transfer');
+                        //Debit Provision Account
+                        MemberNo := Members."Member No.";
+                        PostingDescription := 'Share Capital Transfer ' + MemberNo;
+                        LineNo := JournalManagement.CreateJournalLine(
+                            GlobalAccountType::Vendor, DepositAccount, PostingDate, PostingDescription, PostingAmount,
+                            Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::General, LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
+                            JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
+                        LineNo := JournalManagement.CreateJournalLine(
+                            GlobalAccountType::Vendor, SharesAccount, PostingDate, PostingDescription, -1 * PostingAmount,
+                            Dim1, Dim2, MemberNo, DocumentNo, GlobalTransactionType::General, LineNo, SourceCode, ReasonCode, ExternalDocumentNo,
+                            JournalTemplate, Journalbatch, Dim3, Dim4, Dim5, Dim6, DIm7, Dim8);
+                        JournalManagement.CompletePosting(JournalTemplate, JournalBatch);
+                        JobExecEntries.Reset();
+                        if JobExecEntries.FindLast() then
+                            LineNo := JobExecEntries."Entry No" + 1
+                        else
+                            LineNo := 1;
+                        JobExecEntries.Init();
+                        JobExecEntries."Document No" := Format(Today);
+                        JobExecEntries."Entry No" := LineNo;
+                        JobExecEntries."Member No" := MemberNo;
+                        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Share Transfer";
+                        JobExecEntries."Run Date" := CurrentDateTime;
+                        JobExecEntries.Insert();
+                    end;
+                end;
+            until Members.Next() = 0;
+        end;
+    end;
+
+    procedure RecoverMobileLoans()
+    begin
+
+    end;
+
+    procedure SendMobileLoanReminders()
+    var
+        DueDate, DueDateMinus7 : Date;
+        LoanApplication: Record "Loan Application";
+        MemberNo: Code[20];
+        SMSMessage, SMSNo : text;
+        SMSSend: Codeunit "Notifications Management";
+        Members: Record Members;
+    begin
+        LoanApplication.Reset();
+        LoanApplication.SetFilter("Loan Balance", '>0');
+        LoanApplication.SetRange("Product Code", '');
+        LoanApplication.SetFilter("Repayment End Date", '>%1', Today);
+        if LoanApplication.FindSet() then begin
+            repeat
+                MemberNo := '';
+                MemberNo := LoanApplication."Member No.";
+                if Members.Get(MemberNo) then begin
+                    SMSNo := Members."Mobile Phone No.";
+                    SMSMessage := '';
+                    SMSMessage := 'Dear ' + Members."First Name" + ' your ' + LoanApplication."Product Description" + ' of KSh. ' + Format(LoanApplication."Loan Balance") + ' is due on ' + Format(LoanApplication."Repayment End Date");
+                    DueDateMinus7 := 0D;
+                    DueDateMinus7 := CalcDate('-7D', LoanApplication."Repayment End Date");
+                    JobExecEntries.Reset();
+                    JobExecEntries.SetRange("Document No", Format(Today));
+                    JobExecEntries.SetRange("Member No", MemberNo);
+                    JobExecEntries.SetRange("Task Type", JobExecEntries."Task Type"::"Loan SMS");
+                    if JobExecEntries.IsEmpty then begin
+                        if ((DueDateMinus7 > Today) and (DueDateMinus7 <> 0D) and (LoanApplication."Repayment End Date" > Today)) then begin
+                            JobExecEntries.Reset();
+                            if JobExecEntries.FindLast() then
+                                LineNo := JobExecEntries."Entry No" + 1
+                            else
+                                LineNo := 1;
+                            SMSSend.SendSms(SMSNo, SMSMessage);
+                            JobExecEntries.Init();
+                            JobExecEntries."Document No" := Format(Today);
+                            JobExecEntries."Entry No" := LineNo;
+                            JobExecEntries."Member No" := LoanApplication."Member No.";
+                            JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Loan SMS";
+                            JobExecEntries."Run Date" := CurrentDateTime;
+                            JobExecEntries.Insert();
+                        end;
+                    end;
+                end;
+            until LoanApplication.Next() = 0;
+        end;
+    end;
+
     procedure updateGLEntry()
     var
         GLEntry: Record "G/L Entry";
@@ -16184,6 +16479,10 @@ codeunit 90020 "Scheduled Activities"
     begin
         Integrations.PostMobileTransactions();
         Integrations.PostATMTransactions();
+        RecoverEntranceFee();
+        TransferShareCapital();
+        SendMobileLoanReminders();
+        RecoverMobileLoans();
     end;
 
     procedure ExecuteFunction(idx: Integer) response: Text
@@ -16194,7 +16493,11 @@ codeunit 90020 "Scheduled Activities"
     end;
 
     var
-        myInt: Integer;
+        GlobalTransactionType: Option General,"Cash Deposit","Cash Withdrawal",ATM,"Loan Disbursal","Interest Due","Interest Paid","Principle Paid","Mobile Dep","Mobile Wit","Acc. Transfer","Cheque Deposit","Bankers Cheque","Standing Order","Fixed Deposit","End Month Salary","Checkoff Pay","Inter Teller","Teller-Treasury","Disb. Rec","Mid Month Salary",Bonus,"Penalty Due","Penalty Paid";
+        GlobalAccountType: Option "G/L Account",Customer,Vendor,"Bank Account","Fixed Asset","IC Partner",Employee;
+        GlobalTaskType: Option "Loan SMS","Share Transfer","Entrance Fee","Loan Recovery";
+        JobExecEntries: Record "Job Execution Entries";
+        LineNo: Integer;
 }
 codeunit 90021 "Credit Email Management"
 {

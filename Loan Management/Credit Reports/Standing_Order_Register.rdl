@@ -11,91 +11,6 @@
       <rd:DataSourceID>ddaeefe8-cc2d-4779-b42e-3f194ff249a9</rd:DataSourceID>
     </DataSource>
   </DataSources>
-  <DataSets>
-    <DataSet Name="DataSet_Result">
-      <Query>
-        <DataSourceName>DataSource</DataSourceName>
-        <CommandText />
-      </Query>
-      <Fields>
-        <Field Name="Document_No">
-          <DataField>Document_No</DataField>
-        </Field>
-        <Field Name="STO_Type">
-          <DataField>STO_Type</DataField>
-        </Field>
-        <Field Name="Member_No">
-          <DataField>Member_No</DataField>
-        </Field>
-        <Field Name="Member_Name">
-          <DataField>Member_Name</DataField>
-        </Field>
-        <Field Name="Start_Date">
-          <DataField>Start_Date</DataField>
-        </Field>
-        <Field Name="Created_On">
-          <DataField>Created_On</DataField>
-        </Field>
-        <Field Name="Account_No">
-          <DataField>Account_No</DataField>
-        </Field>
-        <Field Name="AccountName">
-          <DataField>AccountName</DataField>
-        </Field>
-        <Field Name="PFNumber">
-          <DataField>PFNumber</DataField>
-        </Field>
-        <Field Name="EmployerName">
-          <DataField>EmployerName</DataField>
-        </Field>
-        <Field Name="Standing_Order_Class">
-          <DataField>Standing_Order_Class</DataField>
-        </Field>
-        <Field Name="Destination_Account">
-          <DataField>Destination_Account</DataField>
-        </Field>
-        <Field Name="Destination_Name">
-          <DataField>Destination_Name</DataField>
-        </Field>
-        <Field Name="LastRunDate">
-          <DataField>LastRunDate</DataField>
-        </Field>
-        <Field Name="NextRunDate">
-          <DataField>NextRunDate</DataField>
-        </Field>
-        <Field Name="Period">
-          <DataField>Period</DataField>
-        </Field>
-        <Field Name="Run_From_Day">
-          <DataField>Run_From_Day</DataField>
-        </Field>
-        <Field Name="Amount">
-          <DataField>Amount</DataField>
-        </Field>
-        <Field Name="AmountFormat">
-          <DataField>AmountFormat</DataField>
-        </Field>
-        <Field Name="ProductCode">
-          <DataField>ProductCode</DataField>
-        </Field>
-        <Field Name="ProductName">
-          <DataField>ProductName</DataField>
-        </Field>
-        <Field Name="STOFrequency">
-          <DataField>STOFrequency</DataField>
-        </Field>
-        <Field Name="LoanBalance">
-          <DataField>LoanBalance</DataField>
-        </Field>
-        <Field Name="LoanBalanceFormat">
-          <DataField>LoanBalanceFormat</DataField>
-        </Field>
-        <Field Name="STOStatus">
-          <DataField>STOStatus</DataField>
-        </Field>
-      </Fields>
-    </DataSet>
-  </DataSets>
   <ReportSections>
     <ReportSection>
       <Body>
@@ -1610,12 +1525,6 @@
       </Page>
     </ReportSection>
   </ReportSections>
-  <ReportParametersLayout>
-    <GridLayoutDefinition>
-      <NumberOfColumns>4</NumberOfColumns>
-      <NumberOfRows>2</NumberOfRows>
-    </GridLayoutDefinition>
-  </ReportParametersLayout>
   <Code>Public Function BlankZero(ByVal Value As Decimal)
     if Value = 0 then
         Return ""
@@ -1655,4 +1564,89 @@ End Function
   <ConsumeContainerWhitespace>true</ConsumeContainerWhitespace>
   <rd:ReportUnitType>Cm</rd:ReportUnitType>
   <rd:ReportID>0eeb6585-38ae-40f1-885b-8d50088d51b4</rd:ReportID>
+  <DataSets>
+    <DataSet Name="DataSet_Result">
+      <Fields>
+        <Field Name="Document_No">
+          <DataField>Document_No</DataField>
+        </Field>
+        <Field Name="STO_Type">
+          <DataField>STO_Type</DataField>
+        </Field>
+        <Field Name="Member_No">
+          <DataField>Member_No</DataField>
+        </Field>
+        <Field Name="Member_Name">
+          <DataField>Member_Name</DataField>
+        </Field>
+        <Field Name="Start_Date">
+          <DataField>Start_Date</DataField>
+        </Field>
+        <Field Name="Created_On">
+          <DataField>Created_On</DataField>
+        </Field>
+        <Field Name="Account_No">
+          <DataField>Account_No</DataField>
+        </Field>
+        <Field Name="AccountName">
+          <DataField>AccountName</DataField>
+        </Field>
+        <Field Name="PFNumber">
+          <DataField>PFNumber</DataField>
+        </Field>
+        <Field Name="EmployerName">
+          <DataField>EmployerName</DataField>
+        </Field>
+        <Field Name="Standing_Order_Class">
+          <DataField>Standing_Order_Class</DataField>
+        </Field>
+        <Field Name="Destination_Account">
+          <DataField>Destination_Account</DataField>
+        </Field>
+        <Field Name="Destination_Name">
+          <DataField>Destination_Name</DataField>
+        </Field>
+        <Field Name="LastRunDate">
+          <DataField>LastRunDate</DataField>
+        </Field>
+        <Field Name="NextRunDate">
+          <DataField>NextRunDate</DataField>
+        </Field>
+        <Field Name="Period">
+          <DataField>Period</DataField>
+        </Field>
+        <Field Name="Run_From_Day">
+          <DataField>Run_From_Day</DataField>
+        </Field>
+        <Field Name="Amount">
+          <DataField>Amount</DataField>
+        </Field>
+        <Field Name="AmountFormat">
+          <DataField>AmountFormat</DataField>
+        </Field>
+        <Field Name="ProductCode">
+          <DataField>ProductCode</DataField>
+        </Field>
+        <Field Name="ProductName">
+          <DataField>ProductName</DataField>
+        </Field>
+        <Field Name="STOFrequency">
+          <DataField>STOFrequency</DataField>
+        </Field>
+        <Field Name="LoanBalance">
+          <DataField>LoanBalance</DataField>
+        </Field>
+        <Field Name="LoanBalanceFormat">
+          <DataField>LoanBalanceFormat</DataField>
+        </Field>
+        <Field Name="STOStatus">
+          <DataField>STOStatus</DataField>
+        </Field>
+      </Fields>
+      <Query>
+        <DataSourceName>DataSource</DataSourceName>
+        <CommandText />
+      </Query>
+    </DataSet>
+  </DataSets>
 </Report>

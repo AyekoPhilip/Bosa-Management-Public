@@ -178,6 +178,11 @@ table 90000 "Sacco Setup"
         {
             TableRelation = "Product Factory" where("Product Type" = const("Loan Account"));
         }
+        field(46; "Reg. Fee"; Decimal) { }
+        field(47; "Reg. Fee Account"; Code[20])
+        {
+            TableRelation = "G/L Account";
+        }
     }
 
     keys
@@ -1505,6 +1510,7 @@ table 90008 "Members"
             TableRelation = "User Setup";
         }
         field(75; "Guarantee Blocked"; Boolean) { }
+        field(76; "Reg. Fee Paid"; Boolean) { }
 
 
     }
@@ -13327,6 +13333,109 @@ table 90124 "Appraisal Documents"
     keys
     {
         key(Key1; "Employer Code", "Line No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+table 90125 "Online Reversals"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Document No"; Code[20])
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Created On"; DateTime) { }
+        field(3; "Created By"; Code[100]) { }
+        field(4; "Processed On"; DateTime) { }
+        field(5; Processed; Boolean) { }
+    }
+
+    keys
+    {
+        key(Key1; "Document No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+
+table 90126 "Job Execution Entries"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Entry No"; Integer)
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Run Date"; DateTime) { }
+        field(3; "Document No"; Code[20]) { }
+        field(4; "Member No"; Code[20]) { }
+        field(5; "Task Type"; Option)
+        {
+            OptionMembers = "Loan SMS","Share Transfer","Entrance Fee","Loan Recovery","ATM Post","Mobile Post";
+        }
+        field(6; "Transactions Count"; Integer) { }
+    }
+
+    keys
+    {
+        key(Key1; "Entry No")
         {
             Clustered = true;
         }

@@ -452,10 +452,6 @@ page 95000 "Credit Clerk"
                 }
                 group("Periodic Activities")
                 {
-                    action("Transfer Minimum Share Capital")
-                    {
-                        RunObject = report "Transfer Shares - Q";
-                    }
                     group("Checkoff Variation")
                     {
                         action("Online Checkoff Variations")
@@ -599,6 +595,10 @@ page 95000 "Credit Clerk"
                         action("New Loan Applications")
                         {
                             RunObject = page "New Online Loans";
+                        }
+                        action("Job Execution Entries")
+                        {
+                            RunObject = page "Job Execution Entries";
                         }
                         action("Online Guarantor Substitutions")
                         {

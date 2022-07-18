@@ -54,6 +54,8 @@ page 90000 "Sacco Setup"
                 field("Minimum Deposit Cont."; "Minimum Deposit Cont.") { }
                 field("Block SMS"; "Block SMS") { }
                 field("Defaulter Loan Product"; "Defaulter Loan Product") { }
+                field("Reg. Fee"; "Reg. Fee") { }
+                field("Reg. Fee Account"; "Reg. Fee Account") { }
             }
         }
         area(Factboxes)
@@ -22436,6 +22438,52 @@ page 90302 "Loan Documents"
             repeater(GroupName)
             {
                 field("Document Description"; "Document Description") { }
+            }
+        }
+    }
+}
+page 90303 "Job Execution Entries"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Job Execution Entries";
+    InsertAllowed = false;
+    DeleteAllowed = false;
+    ModifyAllowed = false;
+    SourceTableView = sorting("Entry No") order(descending);
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Entry No"; "Entry No") { }
+                field("Document No"; "Document No") { }
+                field("Run Date"; "Run Date") { }
+                field("Member No"; "Member No") { }
+                field("Task Type"; "Task Type") { }
+                field("Transactions Count"; "Transactions Count") { }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
             }
         }
     }

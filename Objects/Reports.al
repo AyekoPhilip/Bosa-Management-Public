@@ -2828,61 +2828,6 @@ report 90030 "Member Application"
     var
         CompanyInformation: Record "Company Information";
 }
-report 90031 "Transfer Shares - Q"
-{
-    UsageCategory = Administration;
-    ApplicationArea = All;
-    ProcessingOnly = true;
-    dataset
-    {
-        dataitem(DataItemName; Members)
-        {
-            trigger OnAfterGetRecord()
-            begin
-                Window.Update(1, "Full Name");
-                MemberManagement.TransferShareCapital("Member No.");
-            end;
-        }
-    }
-    requestpage
-    {
-        layout
-        {
-            area(Content)
-            {
-
-            }
-        }
-
-        actions
-        {
-            area(processing)
-            {
-                action(ActionName)
-                {
-                    ApplicationArea = All;
-
-                }
-            }
-        }
-    }
-
-
-
-    var
-        MemberManagement: Codeunit "Member Management";
-        Window: Dialog;
-
-    trigger OnPreReport()
-    begin
-        Window.open('Validating \#1###')
-    end;
-
-    trigger OnPostReport()
-    begin
-        Window.close;
-    end;
-}
 report 90032 "Checkoff Advise"
 {
 
@@ -5175,5 +5120,5 @@ report 90051 "Underpaid Principle"
 
 }
 
-//report 90015
+//report 90015,90031
 //Ru9Novt5n+Kqf
