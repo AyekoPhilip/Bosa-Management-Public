@@ -133,3 +133,48 @@ query 90003 "Savings Ledger Entry"
 
     end;
 }
+query 90004 "Dividend Detailed Lines"
+{
+    Caption = 'Dividend Detailed Lines';
+    QueryType = Normal;
+
+
+    elements
+    {
+        dataitem(DividendDetLines; "Dividend Det. Lines")
+        {
+            column(AccountNo; "Account No")
+            {
+            }
+            column(Amount; Amount)
+            {
+            }
+            column(AmountBase; "Amount (Base)")
+            {
+            }
+            column(DocumentNo; "Document No")
+            {
+            }
+            column(EntryNo; "Entry No")
+            {
+            }
+            column(EntryType; "Entry Type")
+            {
+            }
+            column(MemberNo; "Member No")
+            {
+            }
+            column(PostToAccount; "Post To Account")
+            {
+            }
+            column(PosttoAccountType; "Post to Account Type")
+            {
+            }
+        }
+    }
+
+    trigger OnBeforeOpen()
+    begin
+
+    end;
+}

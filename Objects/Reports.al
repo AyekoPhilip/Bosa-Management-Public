@@ -3979,6 +3979,7 @@ report 90042 "Standing Order Register"
     ApplicationArea = All;
     RDLCLayout = '.\Loan Management\Credit Reports\Standing_Order_Register.rdl';
     DefaultLayout = RDLC;
+
     dataset
     {
         dataitem(DataItemName; "Standing Order")

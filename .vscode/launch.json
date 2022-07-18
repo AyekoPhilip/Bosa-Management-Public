@@ -6,8 +6,10 @@
             "request": "launch",
             "type": "al",  
             //Ushuru Server                      
-            "server": "http://192.168.0.116",
-            "port": 9049,      
+            //"server": "http://192.168.0.116",
+            "server": "http://192.168.0.15",
+            //"port": 9049,   
+            "port": 7049,   
             "serverInstance": "BC180",    
             "authentication": "UserPassword",
             //**** ITL Server

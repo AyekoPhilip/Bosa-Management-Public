@@ -2542,7 +2542,7 @@ page 90023 "Fixed Deposit"
                     CurrPage.CLOSE();
                 end;
             }
-             action(Approvals)
+            action(Approvals)
             {
                 ApplicationArea = all;
                 Image = Approvals;
@@ -2551,7 +2551,7 @@ page 90023 "Fixed Deposit"
                 var
                     ApprovalsMgmt: Codeunit "Approvals Mgmt.";
                 begin
-                 ApprovalsMgmt.OpenApprovalEntriesPage(Rec.RECORDID);
+                    ApprovalsMgmt.OpenApprovalEntriesPage(Rec.RECORDID);
                     //CurrPage.CLOSE();
                 end;
             }
