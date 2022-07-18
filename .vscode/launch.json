@@ -7,11 +7,12 @@
             "type": "al",  
             //Ushuru Server                      
             //"server": "http://192.168.0.116",
-            "server": "http://192.168.0.15",
+            //"server": "http://192.168.0.15",
             //"port": 9049,   
+            "server": "http://localhost",
             "port": 7049,   
-            "serverInstance": "BC180",    
-            "authentication": "UserPassword",
+            "serverInstance": "BC200",    
+            "authentication": "Windows",
             //**** ITL Server
             /*"server": "http://185.213.27.138",
             "port": 7049,
