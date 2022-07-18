@@ -4617,7 +4617,6 @@ report 90047 "Loan Ageing Analysis"
                 CompanyInformation.CalcFields(Picture);
             end;
 
-<<<<<<< HEAD
 report 90047 "Loan Checkoff Analysis"
 {
 
@@ -4670,7 +4669,6 @@ report 90047 "Loan Checkoff Analysis"
                 end;
 
 
-=======
             trigger OnAfterGetRecord()
             begin
                 CompanyInformation.get;
@@ -4715,35 +4713,28 @@ report 90047 "Loan Checkoff Analysis"
                                             GroupSortingOrder := 7;
                                         end else
                                             CurrReport.Skip();
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
             end;
 
         }
     }
 
-<<<<<<< HEAD
 
 
-=======
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
     requestpage
     {
         layout
         {
             area(Content)
             {
-<<<<<<< HEAD
                 group(GroupName)
                 {
 
-=======
-                group("Report Filters")
-                {
-                    field("As At Date"; AsAtDate) { }
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
+                    group("Report Filters")
+                    {
+                        field("As At Date"; AsAtDate) { }
+                    }
                 }
             }
-        }
 
         actions
         {
@@ -4760,7 +4751,6 @@ report 90047 "Loan Checkoff Analysis"
 
     var
         CompanyInformation: Record "Company Information";
-<<<<<<< HEAD
         PayrollNo: Code[20];
         MemberMgt: Codeunit "Member Management";
         IssueDate: Date;
@@ -4800,7 +4790,6 @@ report 90048 "Loan Pro-rata Interest Report"
             column("CompanyAddress2"; CompanyInfo."Address 2") { }
             column("CompanyPhone"; CompanyInfo."Phone No.") { }
             column("CompanyEmail"; CompanyInfo."E-Mail") { }
-=======
         EmployerCode, EmployerName : Code[100];
         Members: Record Members;
         Employers: Record "Employer Codes";
@@ -4871,7 +4860,6 @@ report 90048 "Loan Defaulters"
                 Deposits := LoansMgt.GetMemberDeposits("Member No.");
                 AgeingGroup := '';
             end;
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
 
         }
     }
@@ -4908,7 +4896,6 @@ report 90048 "Loan Defaulters"
         {
             area(processing)
             {
-<<<<<<< HEAD
             }
         }
 
@@ -4941,7 +4928,6 @@ report 90048 "Loan Defaulters"
 
 
 //report 90015
-=======
                 action(ActionName)
                 {
                     ApplicationArea = All;
@@ -5278,5 +5264,4 @@ report 90051 "Underpaid Principle"
 }
 
 //report 90015,90031
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
 //Ru9Novt5n+Kqf
