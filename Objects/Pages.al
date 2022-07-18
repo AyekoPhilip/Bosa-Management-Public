@@ -1018,6 +1018,7 @@ page 90009 Members
                 field("Mobile Phone No."; rec."Mobile Phone No.") { }
                 field("Payroll No."; Rec."Payroll No.") { }
                 field("Date of Birth"; Rec."Date of Birth") { }
+                field("Reg. Fee Paid"; "Reg. Fee Paid") { }
 
                 field("Member Status"; rec."Member Status") { }
                 field("Employer Code"; Rec."Employer Code") { }
