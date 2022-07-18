@@ -4616,180 +4616,15 @@ report 90047 "Loan Ageing Analysis"
                 CompanyInformation.get();
                 CompanyInformation.CalcFields(Picture);
             end;
-
-report 90047 "Loan Checkoff Analysis"
-{
-
-    UsageCategory = ReportsAndAnalysis;
-    PreviewMode = PrintLayout;
-    ApplicationArea = All;
-    DefaultLayout = RDLC;
-    RDLCLayout = '.\Loan Management\Credit Reports\Loan Checkoff Analysis.rdl';
-    dataset
-    {
-        dataitem("CheckoffAdvice"; "Checkoff Advice")
-        {
-            RequestFilterFields = "Advice Date", "Employer Code", "Member No";
-            column("CompanyLogo"; CompanyInformation.Picture) { }
-            column("CompanyName"; CompanyInformation.Name) { }
-            column("CompanyAddress1"; CompanyInformation.Address) { }
-            column("CompanyAddress2"; CompanyInformation."Address 2") { }
-            column("CompanyPhone"; CompanyInformation."Phone No.") { }
-            column("CompanyEmail"; CompanyInformation."E-Mail") { }
-            column(Member_No; "Member No") { }
-            column(MemberName; "Member Name") { }
-            column(Amount_Off; "Amount Off") { }
-            column(Amount_On; "Amount On") { }
-            column(Current_Balance; "Current Balance") { }
-            column(Advice_Date; "Advice Date") { }
-            column(Advice_Type; "Advice Type") { }
-            //column(AccountNo; AccountNo) { }
-            column(ProductName; "Product Name") { }
-            column(Loan_No; "Loan No") { }
-            column(EmployerCode; "Employer Code") { }
-            column(PayrollNo; "PayrollNo") { }
-
-
-            trigger OnAfterGetRecord()
-            begin
-                CheckoffAdvice.CalcFields("Member Name");
-                CheckoffAdvice.CalcFields("Employer Code");
-
-
-
-                CompanyInformation.get;
-                CompanyInformation.CalcFields(Picture);
-
-                Member.reset;
-                Member.SetRange(Member."Member No.", "Member No");
-                if Member.findset then begin
-                    Member.TestField("Payroll No");
-
-                    PayrollNo := Member."Payroll No";
-                end;
-
-
-            trigger OnAfterGetRecord()
-            begin
-                CompanyInformation.get;
-                CompanyInformation.CalcFields(Picture);
-                EmployerCode := '';
-                EmployerName := '';
-                if Members.Get("Member No.") then begin
-                    if Employers.Get(EmployerCode) then begin
-                        EmployerCode := Employers.Code;
-                        EmployerName := Employers.Name;
-                    end;
-                end;
-                AgeingGroup := '';
-                RemainingPeriod := "Loan Application"."Repayment End Date" - Today;
-                RemainingPeriod := Round((RemainingPeriod / 30), 1, '>');
-                if ((RemainingPeriod > 0) AND (RemainingPeriod <= 3)) then begin
-                    AgeingGroup := '1-3 Months';
-                    GroupSortingOrder := 1;
-                end else
-                    if ((RemainingPeriod > 3) AND (RemainingPeriod <= 6)) then begin
-                        AgeingGroup := '4-6 Months';
-                        GroupSortingOrder := 2;
-                    end else
-                        if ((RemainingPeriod > 6) AND (RemainingPeriod <= 9)) then begin
-                            AgeingGroup := '7-9 Months';
-                            GroupSortingOrder := 3;
-                        end else
-                            if ((RemainingPeriod > 9) AND (RemainingPeriod <= 12)) then begin
-                                AgeingGroup := '10-12 Months';
-                                GroupSortingOrder := 4;
-                            end else
-                                if ((RemainingPeriod > 12) AND (RemainingPeriod <= 24)) then begin
-                                    AgeingGroup := '13-24 Months';
-                                    GroupSortingOrder := 5;
-                                end else
-                                    if ((RemainingPeriod > 24) AND (RemainingPeriod <= 36)) then begin
-                                        AgeingGroup := '25-36 Months';
-                                        GroupSortingOrder := 6;
-                                    end else
-                                        if RemainingPeriod > 36 then begin
-                                            AgeingGroup := 'More than 3 years';
-                                            GroupSortingOrder := 7;
-                                        end else
-                                            CurrReport.Skip();
-            end;
-
         }
-    }
 
-
-
-    requestpage
-    {
-        layout
-        {
-            area(Content)
-            {
-                group(GroupName)
-                {
-
-                    group("Report Filters")
-                    {
-                        field("As At Date"; AsAtDate) { }
-                    }
-                }
-            }
-
-        actions
-        {
-            area(processing)
-            {
-                action(ActionName)
-                {
-                    ApplicationArea = All;
-
-                }
-            }
-        }
     }
 
     var
         CompanyInformation: Record "Company Information";
-        PayrollNo: Code[20];
+        Deposits: Decimal;
         MemberMgt: Codeunit "Member Management";
-        IssueDate: Date;
-        SortingOrder: Integer;
-        Member: Record Members;
-}
-
-report 90048 "Loan Pro-rata Interest Report"
-{
-    ApplicationArea = All;
-    Caption = 'Loan Pro-rata Interest Report';
-    UsageCategory = ReportsAndAnalysis;
-    PreviewMode = PrintLayout;
-    DefaultLayout = RDLC;
-    RDLCLayout = '.\Loan Management\Credit Reports\Loan Pro_rata Interest.rdl';
-    dataset
-    {
-
-        dataitem(LoanApplication; "Loan Application")
-        {
-            RequestFilterFields = "Posting Date", "Application Date", "Member No.";
-            DataItemTableView = where(Posted = const(true));
-            column(ApplicationDate; FORMAT("Application Date")) { }
-            column(ProratedInterest; "Prorated Interest") { }
-            column(AppraisalCommited; "Appraisal Commited") { }
-            column(ApprovedAmount; "Approved Amount") { }
-            column(LoanAccount; "Loan Account") { }
-            column(MemberName; "Member Name") { }
-            column(MemberNo; "Member No.") { }
-            column(PostingDate; FORMAT("Posting Date")) { }
-            column(ProductCode; "Product Code") { }
-            column(ProductDescription; "Product Description") { }
-            column(ProratedDays; "Prorated Days") { }
-            column("CompanyLogo"; CompanyInfo.Picture) { }
-            column("CompanyName"; CompanyInfo.Name) { }
-            column("CompanyAddress1"; CompanyInfo.Address) { }
-            column("CompanyAddress2"; CompanyInfo."Address 2") { }
-            column("CompanyPhone"; CompanyInfo."Phone No.") { }
-            column("CompanyEmail"; CompanyInfo."E-Mail") { }
+        LoansMgt: Codeunit "Loans Management";
         EmployerCode, EmployerName : Code[100];
         Members: Record Members;
         Employers: Record "Employer Codes";
@@ -4799,7 +4634,6 @@ report 90048 "Loan Pro-rata Interest Report"
         AsAtDate: Date;
 
 }
-
 report 90048 "Loan Defaulters"
 {
     PreviewMode = Normal;
@@ -4863,17 +4697,10 @@ report 90048 "Loan Defaulters"
 
         }
     }
-
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
     requestpage
     {
         layout
         {
-<<<<<<< HEAD
             area(content)
             {
                 group(GroupName)
@@ -4881,17 +4708,6 @@ report 90048 "Loan Defaulters"
                 }
             }
         }
-=======
-            area(Content)
-            {
-                group(GroupName)
-                {
-                    field("As At Date"; AsAtDate) { }
-                }
-            }
-        }
-
->>>>>>> 22672d19eeecc2c591900c886facaa60ab2f8666
         actions
         {
             area(processing)
@@ -4901,9 +4717,11 @@ report 90048 "Loan Defaulters"
 
     }
     var
-        CompanyInfo: Record "Company Information";
-        Text0001: Label 'Loan Pro-rata Interest Report';
-        TXT0002: Label 'Report %1 generated successfully';
+        CompanyInformation: Record "Company Information";
+        EmployerName, AgeingGroup, Filters, EmployerCode : Text;
+        GroupSortingOrder, RemainingPeriod : Integer;
+        Employers: Record "Employer Codes";
+        LoansMgt: Codeunit "Loans Management";
 
     trigger OnInitReport()
     begin
@@ -4912,46 +4730,16 @@ report 90048 "Loan Defaulters"
 
     trigger OnPreReport()
     begin
-        CompanyInfo.get();
-        CompanyInfo.CalcFields(Picture)
+        CompanyInformation.get();
+        CompanyInformation.CalcFields(Picture)
     end;
 
     trigger OnPostReport()
     begin
-        Message(TXT0002, Text0001);
     end;
 
 
 }
-
-
-
-
-//report 90015
-                action(ActionName)
-                {
-                    ApplicationArea = All;
-
-                }
-            }
-        }
-    }
-
-    var
-        CompanyInformation: Record "Company Information";
-        Deposits: Decimal;
-        MemberMgt: Codeunit "Member Management";
-        LoansMgt: Codeunit "Loans Management";
-        EmployerCode, EmployerName : Code[100];
-        Members: Record Members;
-        Employers: Record "Employer Codes";
-        Filters: Text;
-        AgeingGroup: Text[100];
-        RemainingPeriod, GroupSortingOrder : Integer;
-        AsAtDate: Date;
-
-}
-
 report 90049 "Gen. Loan Defaulters"
 {
     PreviewMode = Normal;
