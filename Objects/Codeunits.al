@@ -16291,7 +16291,7 @@ codeunit 90020 "Scheduled Activities"
                     JobExecEntries.Reset();
                     JobExecEntries.SetRange("Document No", Format(Today));
                     JobExecEntries.SetRange("Member No", MemberNo);
-                    JobExecEntries.SetRange("Task Type", JobExecEntries."Task Type"::"Share Transfer");
+                    JobExecEntries.SetRange("Task Type", JobExecEntries."Task Type"::"Entrance Fee");
                     if JobExecEntries.IsEmpty then begin
                         DepositBalance := 0;
                         DepositAccount := '';
@@ -16302,6 +16302,7 @@ codeunit 90020 "Scheduled Activities"
                             PostingDate := Today;
                             JournalBatch := 'E-FEE';
                             JournalTemplate := 'SACCO';
+                            DocumentNo := MemberNo + 'E-FEE';
                             LineNo := JournalManagement.PrepareJournal(JournalTemplate, JournalBatch, 'Entrance Fee');
                             //Debit Provision Account
                             MemberNo := Members."Member No.";
@@ -16327,7 +16328,7 @@ codeunit 90020 "Scheduled Activities"
                         JobExecEntries."Document No" := Format(Today);
                         JobExecEntries."Entry No" := LineNo;
                         JobExecEntries."Member No" := MemberNo;
-                        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Share Transfer";
+                        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Entrance Fee";
                         JobExecEntries."Run Date" := CurrentDateTime;
                         JobExecEntries.Insert();
                     end;
@@ -16361,6 +16362,7 @@ codeunit 90020 "Scheduled Activities"
             repeat
                 MemberNo := '';
                 MemberNo := Members."Member No.";
+                DocumentNo := MemberNo + 'SCAP';
                 JobExecEntries.Reset();
                 JobExecEntries.SetRange("Document No", Format(Today));
                 JobExecEntries.SetRange("Member No", MemberNo);
