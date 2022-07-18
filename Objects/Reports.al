@@ -4610,5 +4610,183 @@ report 90046 "Savings And Loan Listing"
         SortingOrder: Integer;
 }
 
+report 90047 "Loan Checkoff Analysis"
+{
+
+    UsageCategory = ReportsAndAnalysis;
+    PreviewMode = PrintLayout;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\Loan Checkoff Analysis.rdl';
+    dataset
+    {
+        dataitem("CheckoffAdvice"; "Checkoff Advice")
+        {
+            RequestFilterFields = "Advice Date", "Employer Code", "Member No";
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(Member_No; "Member No") { }
+            column(MemberName; "Member Name") { }
+            column(Amount_Off; "Amount Off") { }
+            column(Amount_On; "Amount On") { }
+            column(Current_Balance; "Current Balance") { }
+            column(Advice_Date; "Advice Date") { }
+            column(Advice_Type; "Advice Type") { }
+            //column(AccountNo; AccountNo) { }
+            column(ProductName; "Product Name") { }
+            column(Loan_No; "Loan No") { }
+            column(EmployerCode; "Employer Code") { }
+            column(PayrollNo; "PayrollNo") { }
+
+
+            trigger OnAfterGetRecord()
+            begin
+                CheckoffAdvice.CalcFields("Member Name");
+                CheckoffAdvice.CalcFields("Employer Code");
+
+
+
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+
+                Member.reset;
+                Member.SetRange(Member."Member No.", "Member No");
+                if Member.findset then begin
+                    Member.TestField("Payroll No");
+
+                    PayrollNo := Member."Payroll No";
+                end;
+
+
+            end;
+
+        }
+    }
+
+
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        PayrollNo: Code[20];
+        MemberMgt: Codeunit "Member Management";
+        IssueDate: Date;
+        SortingOrder: Integer;
+        Member: Record Members;
+}
+
+report 90048 "Loan Pro-rata Interest Report"
+{
+    ApplicationArea = All;
+    Caption = 'Loan Pro-rata Interest Report';
+    UsageCategory = ReportsAndAnalysis;
+    PreviewMode = PrintLayout;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\Loan Pro_rata Interest.rdl';
+    dataset
+    {
+
+        dataitem(LoanApplication; "Loan Application")
+        {
+            RequestFilterFields = "Posting Date", "Application Date", "Member No.";
+            DataItemTableView = where(Posted = const(true));
+            column(ApplicationDate; FORMAT("Application Date")) { }
+            column(ProratedInterest; "Prorated Interest") { }
+            column(AppraisalCommited; "Appraisal Commited") { }
+            column(ApprovedAmount; "Approved Amount") { }
+            column(LoanAccount; "Loan Account") { }
+            column(MemberName; "Member Name") { }
+            column(MemberNo; "Member No.") { }
+            column(PostingDate; FORMAT("Posting Date")) { }
+            column(ProductCode; "Product Code") { }
+            column(ProductDescription; "Product Description") { }
+            column(ProratedDays; "Prorated Days") { }
+            column("CompanyLogo"; CompanyInfo.Picture) { }
+            column("CompanyName"; CompanyInfo.Name) { }
+            column("CompanyAddress1"; CompanyInfo.Address) { }
+            column("CompanyAddress2"; CompanyInfo."Address 2") { }
+            column("CompanyPhone"; CompanyInfo."Phone No.") { }
+            column("CompanyEmail"; CompanyInfo."E-Mail") { }
+
+        }
+    }
+
+
+
+    requestpage
+    {
+        layout
+        {
+            area(content)
+            {
+                group(GroupName)
+                {
+                }
+            }
+        }
+        actions
+        {
+            area(processing)
+            {
+            }
+        }
+
+    }
+    var
+        CompanyInfo: Record "Company Information";
+        Text0001: Label 'Loan Pro-rata Interest Report';
+        TXT0002: Label 'Report %1 generated successfully';
+
+    trigger OnInitReport()
+    begin
+
+    end;
+
+    trigger OnPreReport()
+    begin
+        CompanyInfo.get();
+        CompanyInfo.CalcFields(Picture)
+    end;
+
+    trigger OnPostReport()
+    begin
+        Message(TXT0002, Text0001);
+    end;
+
+
+}
+
+
+
+
 //report 90015
 //Ru9Novt5n+Kqf
