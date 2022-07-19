@@ -1341,6 +1341,17 @@ page 90010 Member
                 PromotedCategory = Process;
                 PromotedIsBig = true;
             }
+            action("Checkoff Advise")
+            {
+                RunObject = page "Checkoff Advice";
+                ApplicationArea = All;
+                RunPageLink = "Member No" = field("Member No.");
+                Image = CheckLedger;
+                Promoted = true;
+                PromotedOnly = true;
+                PromotedCategory = Process;
+                PromotedIsBig = true;
+            }
             action("Referees")
             {
                 ApplicationArea = All;
@@ -19334,7 +19345,7 @@ page 90257 "Posted Checkoff Variations"
     ApplicationArea = All;
     UsageCategory = Administration;
     SourceTable = "Checkoff Variation Header";
-    SourceTableView = where(Processed = const(false));
+    SourceTableView = where(Processed = const(true));
     CardPageId = "Checkoff Variation(RO)";
     InsertAllowed = false;
     DeleteAllowed = false;

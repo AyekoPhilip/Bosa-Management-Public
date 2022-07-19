@@ -11853,7 +11853,9 @@ table 90111 "Checkoff Variation Header"
             begin
                 if Members.Get("Member No") then
                     "Member Name" := Members."Full Name";
-                PopulateCurrentSubscriptions();
+                //PopulateCurrentSubscriptions();Fred commented to liase with Phillip to see what works for Ushuru;
+                FnPopulateSubscriptionsBasedOnThePreviousCheckoffAdvise();
+
             end;
         }
         field(3; "Member Name"; Text[150])
@@ -11972,6 +11974,28 @@ table 90111 "Checkoff Variation Header"
         NoSeries: Codeunit NoSeriesManagement;
         SACCOSetup: Record "Sacco Setup";
 
+    local procedure FnPopulateSubscriptionsBasedOnThePreviousCheckoffAdvise()
+    var
+        CheckoffLine: Record "Checkoff Variation Lines";
+        ObjCheckoffLine: Record "Checkoff Variation Lines";
+    begin
+        CheckoffLine.CalcFields("Member No.");
+        CheckoffLine.reset();
+        CheckoffLine.SetRange(CheckoffLine."Member No.", "Member No");
+        if CheckoffLine.FindLast() then begin
+
+            repeat
+                ObjCheckoffLine.Init();
+                ObjCheckoffLine.TransferFields(CheckoffLine);
+                ObjCheckoffLine."Document No" := "Document No";
+                ObjCheckoffLine.insert(true);
+            until CheckoffLine.next = 0;
+        end else begin
+            PopulateCurrentSubscriptions();
+        end;
+
+    end;
+
     trigger OnInsert()
     begin
         SACCOSetup.Get();
@@ -12039,6 +12063,14 @@ table 90112 "Checkoff Variation Lines"
         {
             Editable = false;
         }
+        //Fred Added to pull from variation rather than subscription
+        field(30; "Member No."; Code[50])
+        {
+            // DataClassification = ToBeClassified;
+            FieldClass = FlowField;
+            CalcFormula = lookup("Checkoff Variation Header"."Member No" where("Document No" = field("Document No")));
+            Editable = false;
+        }
     }
 
     keys
@@ -12053,9 +12085,12 @@ table 90112 "Checkoff Variation Lines"
 
     trigger oninsert()
     var
-        myInt: Integer;
+        CheckoffH: Record "Checkoff Variation Header";
     begin
-
+        CheckoffH.reset();
+        CheckoffH.SetRange(CheckoffH."Document No", "Document No");
+        if CheckoffH.findset then
+            "Member No." := CheckoffH."Member No";
     end;
 
     trigger OnModify()

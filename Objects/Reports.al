@@ -5196,10 +5196,10 @@ report 91002 "Loan Pro-rata Interest"
             trigger OnAfterGetRecord()
             begin
                 Interest := 0;
-                LoanApplication.reset;
-                LoanApplication.SetRange("Loan Account", "Loan Account");
-                //LoanApplication.SetRange("Member No.", "Member No.");
-                if LoanApplication.findset then begin
+                if LoanApplication.Get(LoanApplication."Application No") then begin
+                    //LoanApplication.SetRange("Loan Account", "Loan Account");
+                    //LoanApplication.SetRange("Member No.", "Member No.");
+                    //if LoanApplication.findset then begin
                     Interest := LoanApplication."Approved Amount" * LoanApplication."Interest Rate" * 0.01 * (1 / 12) * (1 / 30) * LoanApplication."Prorated Days";
                     Interest := Round(Interest, 1, '=');
                 end;
