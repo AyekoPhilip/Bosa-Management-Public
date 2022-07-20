@@ -5489,6 +5489,11 @@ report 91005 "Membership Statistics"
             column("CompanyAddress2"; CompanyInformation."Address 2") { }
             column("CompanyPhone"; CompanyInformation."Phone No.") { }
             column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            trigger OnPreDataItem()
+            begin
+                CompanyInformation.get();
+                CompanyInformation.CalcFields(Picture);
+            end;
         }
     }
 
