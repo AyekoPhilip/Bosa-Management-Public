@@ -5469,7 +5469,7 @@ report 91005 "Membership Statistics"
         dataitem(Employer_Codes; "Employer Codes")
         {
             RequestFilterFields = Code;
-            //DataItemTableView=
+            DataItemTableView = where(Blocked = const(false));
 
             column(Code; "Code") { }
 
