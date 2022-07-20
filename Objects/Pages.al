@@ -19402,6 +19402,8 @@ page 90258 "Checkoff Variation Lines"
                     Visible = NoT isWindows;
                 }
                 field("Acount Code"; "Acount Code") { }
+                field("Application No."; "Application No.") { }
+                field("Loan Account"; "Loan Account") { }
                 field(Description; Description) { }
                 field("Current Contribution"; "Current Contribution") { }
                 field("New Contribution"; "New Contribution") { }

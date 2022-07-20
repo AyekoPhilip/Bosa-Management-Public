@@ -11956,6 +11956,7 @@ table 90111 "Checkoff Variation Header"
         LoanApplication.SetFilter("Loan Balance", '>0');
         LoanApplication.SetRange("Member No.", "Member No");
         if LoanApplication.FindSet() then begin
+            LoanApplication.CalcFields("Loan Balance");//Fred
             repeat
                 CheckoffVariationLines.Init();
                 CheckoffVariationLines."Document No" := "Document No";
@@ -11969,7 +11970,11 @@ table 90111 "Checkoff Variation Header"
                         CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Inistallment"
                     else
                         CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Principle";
-                CheckoffVariationLines.Insert();
+                CheckoffVariationLines."Account Balance" := LoanApplication."Loan Balance";//Fred
+                CheckoffVariationLines."Application No." := LoanApplication."Application No";//Fred
+                CheckoffVariationLines."Loan Account" := LoanApplication."Loan Account";//Fred
+                CheckoffVariationLines.Insert(true);
+            // CheckoffVariationLines.Modify();
             until LoanApplication.Next() = 0;
         end;
         Subscriptions.Reset();
@@ -12023,14 +12028,13 @@ table 90111 "Checkoff Variation Header"
         CheckoffLine: Record "Checkoff Variation Lines";
         ObjCheckoffLine: Record "Checkoff Variation Lines";
     begin
-        CheckoffLine.CalcFields("Member No.");
+        //CheckoffLine.CalcFields("Member No.");
         CheckoffLine.reset();
         CheckoffLine.SetRange(CheckoffLine."Member No.", "Member No");
         if CheckoffLine.FindLast() then begin
-
             repeat
                 ObjCheckoffLine.Init();
-                ObjCheckoffLine.TransferFields(CheckoffLine);
+                ObjCheckoffLine.TransferFields(CheckoffLine, false);
                 ObjCheckoffLine."Document No" := "Document No";
                 ObjCheckoffLine.insert(true);
             until CheckoffLine.next = 0;
@@ -12102,7 +12106,8 @@ table 90112 "Checkoff Variation Lines"
                 end;
             end;
         }
-        field(6; "Account Balance"; Decimal) { }
+        field(6; "Account Balance"; Decimal) { Editable = false; }
+
 
         field(7; Modified; Boolean)
         {
@@ -12119,12 +12124,14 @@ table 90112 "Checkoff Variation Lines"
         field(40; "Application No."; Code[50])
         {
             DataClassification = ToBeClassified;
-            TableRelation = "Loan Application"."Application No";
+            TableRelation = "Loan Application"."Application No" where(Posted = const(true), "Member No." = field("Member No."));
+            Editable = false;
         }
         field(50; "Loan Account"; Code[50])
         {
             DataClassification = ToBeClassified;
-            TableRelation = "Loan Application"."Loan Account";
+            TableRelation = "Loan Application"."Loan Account" where(Posted = const(true), "Member No." = field("Member No."));
+            Editable = false;
         }
     }
 
