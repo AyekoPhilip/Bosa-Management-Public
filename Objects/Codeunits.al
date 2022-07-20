@@ -5512,9 +5512,13 @@ codeunit 90004 ThirdPartyIntegrations
             repeat
                 TempResponse.AddText('{"Description":"' + LoanDocuments."Document Description" + '"},');
             until LoanDocuments.Next() = 0;
+        end else begin
+            ResponseCode := '01';
+            ResponseMessage.AddText('{"Error":"No Documents Found in ' + LoanDocuments.GetFilters + '"}');
+            exit;
         end;
         if STRLEN(FORMAT(TempResponse)) > 1 then
-            TempResponse.ADDTEXT(COPYSTR(FORMAT(TempResponse), 1, STRLEN(FORMAT(TempResponse)) - 1));
+            ResponseMessage.ADDTEXT(COPYSTR(FORMAT(TempResponse), 1, STRLEN(FORMAT(TempResponse)) - 1));
         ResponseMessage.AddText(']}');
     end;
 
@@ -5628,11 +5632,18 @@ codeunit 90004 ThirdPartyIntegrations
             EntryNo := DocumentUploads."Entry No" + 1
         else
             EntryNo := 1;
+        DocumentUploads.Reset();
+        DocumentUploads.SetRange("Parent Type", DocumentUploads."Parent Type"::"Loan Application");
+        DocumentUploads.SetRange("Parent No", LoanNo);
+        DocumentUploads.SetRange("Document No", FileName);
+        if DocumentUploads.FindSet() then
+            DocumentUploads.DeleteAll();
         DocumentUploads.Init();
         DocumentUploads."Entry No" := EntryNo;
         DocumentUploads."Parent Type" := DocumentUploads."Parent Type"::"Loan Application";
         DocumentUploads."Parent No" := LoanNo;
         DocumentUploads."Document No" := FileName;
+        DocumentUploads."Document Type" := FileName;
         DocumentUploads."Added By" := UserId;
         DocumentUploads."Added On" := CurrentDateTime;
         DocumentUploads.URL := FilePath;
@@ -5643,6 +5654,7 @@ codeunit 90004 ThirdPartyIntegrations
 
     procedure GetLoanApplications(MemberNo: Code[20]; var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
+        DocumentUploads: Record "Document Uploads";
         Requests: Record "Online Guarantor Requests";
         OnlineLoanApplication: Record "Online Loan Application";
         Members: Record Members;
@@ -5754,7 +5766,22 @@ codeunit 90004 ThirdPartyIntegrations
                         TempResponse.ADDTEXT(COPYSTR(FORMAT(Tresp1), 1, STRLEN(FORMAT(Tresp1)) - 1));
                     TempResponse.AddText('],');
                     GetSalaryAppraisalResponse(OnlineLoanApplication."Application No", TempResponse);
-                    TempResponse.AddText(',');
+                    TempResponse.AddText(',"DocumentUploads":[');
+                    DocumentUploads.Reset();
+                    DocumentUploads.SetRange("Parent Type", DocumentUploads."Parent Type"::"Loan Application");
+                    DocumentUploads.SetRange("Parent No", OnlineLoanApplication."Application No");
+                    if DocumentUploads.FindSet() then begin
+                        Clear(Tresp1);
+                        repeat
+                            Tresp1.AddText('{"DocumentType":"' + DocumentUploads."Document Type" + '",');
+                            Tresp1.AddText('"DocumentName":"' + DocumentUploads."Document No" + '",');
+                            Tresp1.AddText('"DocumentURL":"' + DocumentUploads.URL + '"');
+                            Tresp1.AddText('},');
+                        until DocumentUploads.Next() = 0;
+                    end;
+                    if STRLEN(FORMAT(Tresp1)) > 1 then
+                        TempResponse.ADDTEXT(COPYSTR(FORMAT(Tresp1), 1, STRLEN(FORMAT(Tresp1)) - 1));
+                    TempResponse.AddText('],');
                     TempResponse.AddText('"Status":"' + Format(OnlineLoanApplication.Status) + '"},');
                 until OnlineLoanApplication.Next() = 0;
             end;
@@ -6239,9 +6266,27 @@ codeunit 90004 ThirdPartyIntegrations
         Member: Record Members;
         LoanApplication: Record "Online Loan Application";
         LoanGuarantees: Record "Loan Guarantees";
+        MaximumGuarantee: Decimal;
+        LoansMgt: Codeunit "Loans Management";
     begin
         Clear(responseCode);
         Clear(ResponseMessage);
+        MaximumGuarantee := 0;
+        Member.Reset();
+        Member.SetRange("National ID No", IDNo);
+        if Member.FindFirst() then begin
+            MaximumGuarantee := 0;
+            LoansMgt.GetNonSelfGuaranteeEligibility(Member."Member No.");
+            if Amount > MaximumGuarantee then begin
+                responseCode := '01';
+                ResponseMessage.AddText('{"Error":"You Can Only Guarantee Upto' + Format(MaximumGuarantee) + '"}');
+                exit;
+            end;
+        end else begin
+            responseCode := '01';
+            ResponseMessage.AddText('{"Error":"The ID No Does Not Exist"}');
+            exit;
+        end;
         OnlineGuarantors.Reset();
         OnlineGuarantors.SetRange("ID No", IDNo);
         OnlineGuarantors.SetRange("Loan No", LoanNo);
@@ -6309,12 +6354,14 @@ codeunit 90004 ThirdPartyIntegrations
 
     procedure GetMemberGuarantorInformation(var MemberNo: Code[20]; var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
-        Member, Member2 : Record Members;
+        Member, Member2, Requestor : Record Members;
         Guarantors: Record "Loan Guarantees";
         LoansMgt: Codeunit "Loans Management";
         LoanApplication: Record "Loan Application";
         MemberMgt: Codeunit "Member Management";
         OnlineGuarantorReq: Record "Online Guarantor Requests";
+        RequestorPhone: Code[20];
+        MaximumGuarantee: Decimal;
     begin
         Clear(ResponseCode);
         Clear(ResponseMessage);
@@ -6384,12 +6431,20 @@ codeunit 90004 ThirdPartyIntegrations
             OnlineGuarantorReq.SetRange("ID No", Member."National ID No");
             if OnlineGuarantorReq.FindSet() then begin
                 repeat
+                    RequestorPhone := '';
+                    if Requestor.Get(OnlineGuarantorReq.Applicant) then
+                        RequestorPhone := Requestor."Mobile Phone No.";
+                    MaximumGuarantee := 0;
+                    MaximumGuarantee := LoansMgt.GetNonSelfGuaranteeEligibility(Member."Member No.");
                     TempResponse.AddText('{');
                     TempResponse.AddText('"LoanNo":"' + OnlineGuarantorReq."Loan No" + '",');
                     TempResponse.AddText('"LoanPrinciple":"' + format(OnlineGuarantorReq."Loan Principal") + '",');
                     TempResponse.AddText('"Applicant":"' + OnlineGuarantorReq.Applicant + '",');
                     TempResponse.AddText('"ApplicantName":"' + OnlineGuarantorReq.ApplicantName + '",');
+                    TempResponse.AddText('"ApplicantPhoneNumber":"' + RequestorPhone + '",');
+                    TempResponse.AddText('"RequestStatus":"' + format(OnlineGuarantorReq.Status) + '",');
                     TempResponse.AddText('"Type":"' + Format(OnlineGuarantorReq."Request Type") + '",');
+                    TempResponse.AddText('"MaximumGuarantee":"' + Format(MaximumGuarantee) + '",');
                     TempResponse.AddText('"RequestedAmount":"' + format(OnlineGuarantorReq."Requested Amount") + '"');
                     TempResponse.AddText('},');
                 until OnlineGuarantorReq.Next() = 0;
@@ -6698,7 +6753,7 @@ codeunit 90004 ThirdPartyIntegrations
         Clear(ResponseMessage);
         if LoanProducts.Get(REQUEST_TYPE) = false then begin
             responseCode := '01';
-            ResponseMessage.AddText('{"Error":"The Loan Product ' + REQUEST_TYPE + ' does not exist"}');
+            ResponseMessage.AddText('{"Error":"The Loan Product ' + REQUEST_TYPE + ' does not exist","QualifiedAmount":"0"}');
             exit;
         end;
         LoanProducts.Get(REQUEST_TYPE);
@@ -6707,18 +6762,9 @@ codeunit 90004 ThirdPartyIntegrations
             if LoanProducts."Max. Running Loans" > 1 then begin
                 if (CurrentLoans + 1) > AllowedLoans then begin
                     responseCode := '01';
-                    ResponseMessage.addText('{"Error":"You Can Only have a Maximum of ' + format(AllowedLoans) + '"}');
+                    ResponseMessage.addText('{"Error":"You Can Only have a Maximum of ' + format(AllowedLoans) + '","QualifiedAmount":"0"}');
                     exit;
                 end;
-            end;
-            LoanApplication.Reset();
-            LoanApplication.SetRange("Product Code", LoanProducts.Code);
-            LoanApplication.SetRange("Member No.", Member."Member No.");
-            LoanApplication.SetFilter("Loan Balance", '>0');
-            if LoanApplication.FindFirst() then begin
-                responseCode := '01';
-                ResponseMessage.addText('{"Error":"You have a similar product running"}');
-                exit;
             end;
             LinkedProducts.Reset();
             LinkedProducts.SetRange("Product Code", LoanProducts.Code);
@@ -6730,7 +6776,7 @@ codeunit 90004 ThirdPartyIntegrations
                     LoanApplication.SetFilter("Loan Balance", '>0');
                     if LoanApplication.FindFirst() then begin
                         responseCode := '01';
-                        ResponseMessage.addText('{"Error":"You have a similar product running"}');
+                        ResponseMessage.addText('{"Error":"You have a similar product running","QualifiedAmount":"0"}');
                         exit;
                     end;
                 until LinkedProducts.Next() = 0;
@@ -6742,25 +6788,25 @@ codeunit 90004 ThirdPartyIntegrations
             end;
             if MobileLoanBlocked(Member."Member No.", LoanProducts.Code) then begin
                 responseCode := '01';
-                ResponseMessage.AddText('{"Error":"The Member is blocked to Access Mobile Loans"}');
+                ResponseMessage.AddText('{"Error":"The Member is blocked to Access Mobile Loans","QualifiedAmount":"0"}');
                 exit;
             end;
             if Member."Date of Registration" = 0D then begin
                 responseCode := '01';
-                ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months"}');
+                ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months","QualifiedAmount":"0"}');
                 exit;
             end else begin
                 TempSdate := CalcDate('-3M', Today);
                 if Member."Date of Registration" > TempSdate then begin
                     responseCode := '01';
-                    ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months"}');
+                    ResponseMessage.AddText('{"Error":"You Must have been an active Member for the last 3 Months","QualifiedAmount":"0"}');
                     exit;
                 end;
             end;
             Member.CalcFields("Total Deposits", "Outstanding Loans", "Total Shares");
             if Member."Total Shares" < 30000 then begin
                 responseCode := '01';
-                ResponseMessage.AddText('{"Error":"You Must have at least 30,000 Shares Balance"}');
+                ResponseMessage.AddText('{"Error":"You Must have at least 30,000 Shares Balance","QualifiedAmount":"0"}');
                 exit;
             end;
             Deposits := Member."Total Deposits";
@@ -6825,9 +6871,11 @@ codeunit 90004 ThirdPartyIntegrations
                                 end;
                                 if ((LProducts."Min. Salary Count" <> 0) AND (SalaryCount < LProducts."Min. Salary Count")) then begin
                                     responseCode := '01';
-                                    ResponseMessage.addText('{"Error":"You must have processed at least ' + format(LProducts."Min. Salary Count") + ' salaries between ' + DateFilter + '"}');
+                                    ResponseMessage.addText('{"Error":"You must have processed at least ' + format(LProducts."Min. Salary Count") + ' salaries between ' + DateFilter + '","QualifiedAmount":"0"}');
                                     exit;
                                 end;
+                                if SalaryCount = 0 then
+                                    SalaryCount := 1;
                                 case LProducts."Salary Appraisal Type" of
                                     LProducts."Salary Appraisal Type"::"Average Net":
                                         BaseAmount := BaseAmount / SalaryCount;
@@ -6858,12 +6906,12 @@ codeunit 90004 ThirdPartyIntegrations
             MobileMembers.SetRange("Member No", Member."Member No.");
             if MobileMembers.IsEmpty then begin
                 responseCode := '01';
-                ResponseMessage.AddText('{"Error":"You are not registered for Mobile Banking"}');
+                ResponseMessage.AddText('{"Error":"You are not registered for Mobile Banking","QualifiedAmount":"0"}');
                 exit;
             end;
             if NUMBER_OF_MONTHS > 3 then begin
                 responseCode := '01';
-                ResponseMessage.AddText('{"Error":"The Repayment Period Cannot Exceed 3 Months"}');
+                ResponseMessage.AddText('{"Error":"The Repayment Period Cannot Exceed 3 Months","QualifiedAmount":"0"}');
                 exit;
             end;
             QualifiedAmount := EligibleAmount;
@@ -6876,7 +6924,7 @@ codeunit 90004 ThirdPartyIntegrations
             ResponseMessage.AddText('{"QualifiedAmount":"' + format(QualifiedAmount) + '"}');
         end else begin
             responseCode := '01';
-            ResponseMessage.AddText('{"Error":"The Member Does Not Exist"}');
+            ResponseMessage.AddText('{"Error":"The Member Does Not Exist","QualifiedAmount":"0"}');
         end;
 
     end;
