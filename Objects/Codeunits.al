@@ -2122,27 +2122,19 @@ codeunit 90002 "Loans Management"
                 CheckOffAdvice."Amount Off" := VariationLines."Current Contribution";
                 CheckOffAdvice."Amount On" := VariationLines."New Contribution";
                 CheckOffAdvice."Current Balance" := VariationLines."Account Balance";
-                //Fred Added to include tha outstanding Balance of a loan
-                LnProduct.Reset();
-                LnProduct.SetRange(LnProduct.Code, VariationLines."Acount Code");
-                if LnProduct.findset then begin
-                    LoanApplication.reset;
-                    LoanApplication.SetRange("Product Code", LnProduct.Code);
-                    //LoanApplication.SetRange(LoanApplication."Member No.", VariationHeader."Member No");
-                    if LoanApplication.findset then begin
-                        LoanApplication.CalcFields("Loan Balance");
-                        CheckOffAdvice."Current Balance" := LoanApplication."Loan Balance";
-                        Message('This is the current balance %1', CheckOffAdvice."Current Balance");
-                    end;
-
-                end;
-                //Fred Added to include tha outstanding Balance of a loan
                 CheckOffAdvice."Product Type" := VariationLines."Acount Code";
                 CheckOffAdvice."Product Name" := VariationLines.Description;
                 CheckOffAdvice."Advice Type" := CheckOffAdvice."Advice Type"::Adjustment;
                 CheckOffAdvice."Advice Date" := VariationHeader."Effective Date";
+                CheckOffAdvice."Loan No" := VariationLines."Loan Account";
+
+                if LoanApplication.Get(VariationLines."Application No.") then begin
+                    LoanApplication.CalcFields("Loan Balance");
+                    CheckOffAdvice."Current Balance" := LoanApplication."Loan Balance";
+                end;
                 CheckOffAdvice.Insert();
                 if LoanApplication.get(VariationLines."Acount Code") then begin
+                    LoanApplication.CalcFields("Loan Balance");
                     LoanApplication.Rescheduled := true;
                     LoanApplication."Rescheduled Installment" := VariationLines."New Contribution";
                     LoanApplication.Modify();

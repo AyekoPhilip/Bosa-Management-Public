@@ -19559,6 +19559,7 @@ page 90261 "Checkoff Advice"
                 field("Product Type"; "Product Type") { }
                 field("Product Name"; "Product Name") { }
                 field("Account No"; "Account No") { }
+                field("Loan No"; "Loan No") { Editable = false; Caption = 'Loan Account.'; }
                 field("Advice Date"; "Advice Date") { }
                 field("Advice Type"; "Advice Type") { }
                 field("Amount Off"; "Amount Off") { }

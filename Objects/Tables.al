@@ -12187,8 +12187,8 @@ table 90113 "Checkoff Advice"
         field(3; "Account No"; Code[20]) { }
         field(4; "Amount On"; Decimal) { }
         field(5; "Amount Off"; Decimal) { }
-        field(6; "Current Balance"; Decimal) { }
-        field(7; "Loan No"; Code[20]) { }
+        field(6; "Current Balance"; Decimal) { Editable = false; }
+        field(7; "Loan No"; Code[20]) { Editable = false; }
         field(8; "Product Type"; Code[20]) { }
         field(9; "Product Name"; Text[100]) { }
         field(10; "Advice Type"; Option)
@@ -12207,6 +12207,11 @@ table 90113 "Checkoff Advice"
             Editable = false;
             FieldClass = FlowField;
             CalcFormula = lookup(Members."Full Name" where("Member No." = field("Member No")));
+        }
+        field(30; "Loan Application No."; Code[50])
+        {
+            DataClassification = ToBeClassified;
+            Editable = false;
         }
     }
 
