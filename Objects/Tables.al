@@ -12029,20 +12029,20 @@ table 90111 "Checkoff Variation Header"
         ObjCheckoffLine: Record "Checkoff Variation Lines";
     begin
         //CheckoffLine.CalcFields("Member No.");
-        CheckoffLine.reset();
-        CheckoffLine.SetRange(CheckoffLine."Member No.", "Member No");
-        if CheckoffLine.FindLast() then begin
-            repeat
-                ObjCheckoffLine.Init();
-                ObjCheckoffLine.TransferFields(CheckoffLine, false);
-                ObjCheckoffLine."Document No" := "Document No";
-                ObjCheckoffLine.insert(true);
-            until CheckoffLine.next = 0;
-        end else begin
-            PopulateCurrentSubscriptions();
-        end;
-
+        // CheckoffLine.reset();
+        // CheckoffLine.SetRange(CheckoffLine."Member No.", "Member No");
+        // if CheckoffLine.FindLast() then begin
+        //     repeat
+        //         ObjCheckoffLine.Init();
+        //         ObjCheckoffLine.TransferFields(CheckoffLine, false);
+        //         ObjCheckoffLine."Document No" := "Document No";
+        //         ObjCheckoffLine.insert(true);
+        //     until CheckoffLine.next = 0;
+        // end else begin
+        PopulateCurrentSubscriptions();
     end;
+
+    //end;
 
     trigger OnInsert()
     begin
