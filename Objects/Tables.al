@@ -11897,8 +11897,8 @@ table 90111 "Checkoff Variation Header"
             begin
                 if Members.Get("Member No") then
                     "Member Name" := Members."Full Name";
-                //PopulateCurrentSubscriptions();Fred commented to liase with Phillip to see what works for Ushuru;
-                FnPopulateSubscriptionsBasedOnThePreviousCheckoffAdvise();
+                PopulateCurrentSubscriptions();
+                //FnPopulateSubscriptionsBasedOnThePreviousCheckoffAdvise();
 
             end;
         }
