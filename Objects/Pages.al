@@ -19446,10 +19446,10 @@ page 90259 "Checkoff Variation"
         {
             group(GroupName)
             {
-                field("Document No"; "Document No") { }
-                field("Member No"; "Member No") { }
-                field("Member Name"; "Member Name") { }
-                field("Effective Date"; "Effective Date") { }
+                field("Document No"; Rec."Document No") { }
+                field("Member No"; Rec."Member No") { }
+                field("Member Name"; Rec."Member Name") { }
+                field("Effective Date"; Rec."Effective Date") { }
             }
             part("Check Off Variation Lines"; "Checkoff Variation Lines")
             {
