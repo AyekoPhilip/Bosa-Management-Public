@@ -5197,9 +5197,6 @@ report 91002 "Loan Pro-rata Interest"
             begin
                 Interest := 0;
                 if LoanApplication.Get(LoanApplication."Application No") then begin
-                    //LoanApplication.SetRange("Loan Account", "Loan Account");
-                    //LoanApplication.SetRange("Member No.", "Member No.");
-                    //if LoanApplication.findset then begin
                     Interest := LoanApplication."Approved Amount" * LoanApplication."Interest Rate" * 0.01 * (1 / 12) * (1 / 30) * LoanApplication."Prorated Days";
                     Interest := Round(Interest, 1, '=');
                 end;
@@ -5347,6 +5344,116 @@ report 91003 "OverPaid Principle"
         LoanAge: Integer;
 
 }
+
+report 91004 "Non_Guaranteed Loans"
+{
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\Non_GuaranteedLoans.rdl';
+    dataset
+    {
+        dataitem("Loan Application"; "Loan Application")
+        {
+            DataItemTableView = where("Total Securities" = filter(<= 0));
+            RequestFilterFields = "Date Filter", "Member No.", "Application No", "Application Date", "Employer Code";
+            column(Application_No; "Application No") { }
+            column(Installments; Installments) { }
+            column(Loan_Classification; "Loan Classification") { }
+            column(Deposits; Deposits) { }
+            column(Member_No_; "Member No.") { }
+            column(Member_Name; "Member Name") { }
+            column(EmployerName; EmployerName) { }
+            column(Posting_Date; "Posting Date") { }
+            column(Last_Pay_Date; "Last Pay Date") { }
+            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Approved_Amount; "Approved Amount") { }
+            column(Loan_Balance; "Loan Balance") { }
+            column(GroupSortingOrder; GroupSortingOrder) { }
+            column(Product_Code; "Product Code") { }
+            column(Product_Description; "Product Description") { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(RemainingPeriod; RemainingPeriod) { }
+            column(Principle_Balance; "Principle Balance - At Date") { }
+            column(LoanAge; LoanAge) { }
+            column(Principle_Paid; "Principle Paid") { }
+            column(Interest_Arrears; "Interest Arrears") { }
+            column(Employer_Code; "Employer Code") { }
+            column(Monthly_Principle; "Monthly Principle") { }
+            column(AgeingGroup; AgeingGroup) { }
+            column(Staff_No; "Staff No") { }
+            column(Filters; Filters) { }
+            column(Interest_Rate; "Interest Rate") { }
+            column(Rate_Type; "Interest Repayment Method") { }
+            column(PrincipleDue; PrincipleDue) { }
+            trigger OnPreDataItem()
+            begin
+                Filters := "Loan Application".GetFilters;
+                CompanyInformation.get();
+                CompanyInformation.CalcFields(Picture);
+            end;
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                "Loan Application".CalcFields("Employer Code");
+                EmployerCode := '';
+                EmployerName := '';
+                if Employers.get("Employer Code") then
+                    EmployerName := Employers.Name;
+                AgeingGroup := '';
+                //if "Loan Application"."Repayment End Date" = 0D then
+                // CurrReport.Skip();
+            end;
+
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        Deposits, DefPrinciple, PrinciplePaid, MonthlyPrinciple, PrincipleDue : Decimal;
+        MemberMgt: Codeunit "Member Management";
+        LoansMgt: Codeunit "Loans Management";
+        EmployerCode, EmployerName : Code[100];
+        Members: Record Members;
+        Employers: Record "Employer Codes";
+        Filters: Text;
+        AgeingGroup: Text[100];
+        RemainingPeriod, GroupSortingOrder : Integer;
+        AsAtDate: Date;
+        LoanAge: Integer;
+
+}
+
 
 
 //report 90015,90031
