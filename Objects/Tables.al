@@ -9815,6 +9815,7 @@ table 90084 "Mobile Transsactions"
             fieldclass = flowfield;
             CalcFormula = lookup(Members."Full Name" where("Member No." = field("Dr_Member No")));
         }
+        field(18; "Transaction Name"; Text[100]) { }
     }
     keys
     {
