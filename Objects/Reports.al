@@ -5348,15 +5348,16 @@ report 91003 "OverPaid Principle"
 report 91004 "Non_Guaranteed Loans"
 {
     PreviewMode = Normal;
-    UsageCategory = Administration;
+    UsageCategory = ReportsAndAnalysis;
     ApplicationArea = All;
     DefaultLayout = RDLC;
+    Caption = 'Loans Without Guarantors';
     RDLCLayout = '.\Loan Management\Credit Reports\Non_GuaranteedLoans.rdl';
     dataset
     {
         dataitem("Loan Application"; "Loan Application")
         {
-            DataItemTableView = where("Total Securities" = filter(<= 0));
+            DataItemTableView = where("Total Securities" = filter(= 0), Posted = filter(true));
             RequestFilterFields = "Date Filter", "Member No.", "Application No", "Application Date", "Employer Code";
             column(Application_No; "Application No") { }
             column(Installments; Installments) { }
@@ -5365,9 +5366,9 @@ report 91004 "Non_Guaranteed Loans"
             column(Member_No_; "Member No.") { }
             column(Member_Name; "Member Name") { }
             column(EmployerName; EmployerName) { }
-            column(Posting_Date; "Posting Date") { }
-            column(Last_Pay_Date; "Last Pay Date") { }
-            column(Repayment_End_Date; "Repayment End Date") { }
+            column(Posting_Date; FORMAT("Posting Date")) { }
+            column(Last_Pay_Date; FORMAT("Last Pay Date")) { }
+            column(Repayment_End_Date; FORMAT("Repayment End Date")) { }
             column(Approved_Amount; "Approved Amount") { }
             column(Loan_Balance; "Loan Balance") { }
             column(GroupSortingOrder; GroupSortingOrder) { }
@@ -5452,6 +5453,75 @@ report 91004 "Non_Guaranteed Loans"
         AsAtDate: Date;
         LoanAge: Integer;
 
+}
+
+report 91005 "Membership Statistics"
+{
+    UsageCategory = ReportsAndAnalysis;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Member Management\Report Layouts\MembershipStatistics.rdl';
+
+
+
+    dataset
+    {
+        dataitem(Employer_Codes; "Employer Codes")
+        {
+            RequestFilterFields = Code;
+            //DataItemTableView=
+
+            column(Code; "Code") { }
+
+            column(Name; Name) { }
+
+            column(NoOfActiveMembers; "No. Of Active Members") { }
+
+            column(NoOfDormantMembers; "No. Of Dormant Members") { }
+
+            column(NoOfWithdrawnMembers; "No. Of Withdrawn Members") { }
+
+            column(NoOfDeceasedMembers; "No. Of Deceased Members") { }
+
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+
+
+    var
+        CompanyInformation: Record "Company Information";
 }
 
 

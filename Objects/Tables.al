@@ -1054,6 +1054,51 @@ table 90005 "Employer Codes"
             TableRelation = Customer;
         }
         field(9; SelfEmployment; Boolean) { }
+        field(20; "No. Of Active Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Active)));
+            Editable = false;
+
+        }
+
+        field(30; "No. Of Dormant Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Dormant)));
+            Editable = false;
+        }
+        field(40; "No. Of Deceased Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Desceased)));
+            Editable = false;
+        }
+        field(50; "No. Of Withdrawn Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Withdrawn)));
+            Editable = false;
+        }
+        field(60; "No. Of Reinstated Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter("Re-Instated")));
+            Editable = false;
+        }
+        field(70; "No. Of Rejoined Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter("Re-Instated")));
+            Editable = false;
+        }
+        field(80; Blocked; Boolean)
+        {
+            DataClassification = ToBeClassified;
+            Editable = false;
+            Description = 'If an employer ceases to provide services for the sacco.';
+        }
+
     }
 
 
@@ -1469,9 +1514,8 @@ table 90008 "Members"
             CalcFormula = sum("Uncleared Effects".Amount where("Member No" = field("Member No.")));
             Editable = false;
         }
-        field(60; "Member Status"; Option)
+        field(60; "Member Status"; Enum "Member Status")
         {
-            OptionMembers = Active,Defaulter,"Withdrawal-Pending",Withdrawn,Desceased;
             Editable = false;
         }
         field(61; "Account Filter"; Code[20])
@@ -1489,7 +1533,7 @@ table 90008 "Members"
             TableRelation = "Product Factory";
             FieldClass = FlowFilter;
         }
-        field(65; "Member Signature"; blob)
+        field(65; "Member Signature"; Blob)
         {
             Subtype = Bitmap;
         }
@@ -12059,6 +12103,7 @@ table 90112 "Checkoff Variation Lines"
             end;
         }
         field(6; "Account Balance"; Decimal) { }
+
         field(7; Modified; Boolean)
         {
             Editable = false;
@@ -12070,6 +12115,16 @@ table 90112 "Checkoff Variation Lines"
             FieldClass = FlowField;
             CalcFormula = lookup("Checkoff Variation Header"."Member No" where("Document No" = field("Document No")));
             Editable = false;
+        }
+        field(40; "Application No."; Code[50])
+        {
+            DataClassification = ToBeClassified;
+            TableRelation = "Loan Application"."Application No";
+        }
+        field(50; "Loan Account"; Code[50])
+        {
+            DataClassification = ToBeClassified;
+            TableRelation = "Loan Application"."Loan Account";
         }
     }
 
