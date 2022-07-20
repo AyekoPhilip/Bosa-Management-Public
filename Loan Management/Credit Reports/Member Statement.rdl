@@ -2837,9 +2837,6 @@ End Function
         <Field Name="Member_No_">
           <DataField>Member_No_</DataField>
         </Field>
-        <Field Name="ProductNameCalculated">
-          <DataField>ProductNameCalculated</DataField>
-        </Field>
         <Field Name="Application_Date">
           <DataField>Application_Date</DataField>
         </Field>
@@ -2852,14 +2849,8 @@ End Function
         <Field Name="Monthly_Inistallment">
           <DataField>Monthly_Inistallment</DataField>
         </Field>
-        <Field Name="LoanName">
-          <DataField>LoanName</DataField>
-        </Field>
-        <Field Name="Product_Code">
-          <DataField>Product_Code</DataField>
-        </Field>
-        <Field Name="Product_Description">
-          <DataField>Product_Description</DataField>
+        <Field Name="Monthly_InistallmentFormat">
+          <DataField>Monthly_InistallmentFormat</DataField>
         </Field>
         <Field Name="CredEntry_No_">
           <DataField>CredEntry_No_</DataField>
