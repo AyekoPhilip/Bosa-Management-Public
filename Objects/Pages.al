@@ -369,10 +369,6 @@ page 90004 "Product Card"
                     field("Mobile Appraisal Calculator"; "Mobile Appraisal Calculator") { }
                 }
             }
-            part("Loan Documents"; "Loan Documents")
-            {
-                SubPageLink = "Employer Code" = field(Code);
-            }
         }
     }
 
@@ -1018,6 +1014,7 @@ page 90009 Members
                 field("Mobile Phone No."; rec."Mobile Phone No.") { }
                 field("Payroll No."; Rec."Payroll No.") { }
                 field("Date of Birth"; Rec."Date of Birth") { }
+                field("Reg. Fee Paid"; "Reg. Fee Paid") { }
 
                 field("Member Status"; rec."Member Status") { }
                 field("Employer Code"; Rec."Employer Code") { }
@@ -12899,6 +12896,11 @@ page 90164 Employer
                 field("Suspense Account"; Rec."Suspense Account") { }
             }
             part("Employer Stations"; "Employer Stations")
+            {
+                SubPageLink = "Employer Code" = field(Code);
+            }
+
+            part("Loan Documents"; "Loan Documents")
             {
                 SubPageLink = "Employer Code" = field(Code);
             }

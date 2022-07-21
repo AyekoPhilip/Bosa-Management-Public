@@ -950,6 +950,11 @@ report 90009 "Member Statement"
                         "Vendor Ledger Entry".CalcFields(Amount);
                         RunningBalance += (-1 * "Vendor Ledger Entry".Amount);
                     end;
+
+                    trigger OnPreDataItem()
+                    begin
+                        "Vendor Ledger Entry".SetFilter("Posting Date", DateFilter);
+                    end;
                 }
                 trigger OnPreDataItem()
                 begin
@@ -1011,6 +1016,11 @@ report 90009 "Member Statement"
                     begin
                         CalcFields(Amount);
                         RunningBalance += Amount;
+                    end;
+
+                    trigger OnPreDataItem()
+                    begin
+                        SetFilter("Posting Date", DateFilter);
                     end;
 
                 }

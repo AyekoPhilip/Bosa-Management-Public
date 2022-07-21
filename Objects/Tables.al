@@ -9815,6 +9815,7 @@ table 90084 "Mobile Transsactions"
             fieldclass = flowfield;
             CalcFormula = lookup(Members."Full Name" where("Member No." = field("Dr_Member No")));
         }
+        field(18; "Transaction Name"; Text[100]) { }
     }
     keys
     {
@@ -13431,6 +13432,65 @@ table 90126 "Job Execution Entries"
             OptionMembers = "Loan SMS","Share Transfer","Entrance Fee","Loan Recovery","ATM Post","Mobile Post";
         }
         field(6; "Transactions Count"; Integer) { }
+    }
+
+    keys
+    {
+        key(Key1; "Entry No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+
+table 90127 "ATM Ledger"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Entry No"; Integer)
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Entry Type"; Option)
+        {
+            OptionMembers = Activation,"CBS Blocking","Mobile Blocking",Unblocking;
+        }
+        field(3; "Requested On"; DateTime) { }
+        field(4; Status; Option)
+        {
+            OptionMembers = Success,Fail;
+        }
+        field(5; "User ID"; Code[100])
+        {
+            TableRelation = "User Setup";
+        }
     }
 
     keys
