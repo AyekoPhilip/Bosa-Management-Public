@@ -161,14 +161,15 @@ page 90002 "Product Factory"
                 {
                     StyleExpr = StyleText;
                 }
-                field(Status; Status)
+                field(Status; Rec.Status)
                 {
                     StyleExpr = StyleText;
                 }
-                field("Search Code"; "Search Code")
+                field("Search Code"; Rec."Search Code")
                 {
                     StyleExpr = StyleText;
                 }
+                field("Product Source"; Rec."Product Source") { }
 
             }
         }
@@ -278,6 +279,7 @@ page 90004 "Product Card"
                 field("Account Class"; Rec."Account Class") { }
                 field("Loan Multiplier"; Rec."Loan Multiplier") { }
                 field("Guarantor Multiplier"; Rec."Guarantor Multiplier") { }
+                field("Product Source"; Rec."Product Source") { }
             }
             group("Account Controls")
             {

@@ -596,6 +596,10 @@ table 90001 "Product Factory"
         field(81; "Special Loan Multiplier"; Boolean) { }
         field(82; "Cash Transfer Allowed"; Boolean) { }
         field(83; "Max. Running Loans"; Integer) { }
+        field(100; "Product Source"; enum "Prouct Source")//Added by Fred to cater for FOSA and BOSA loans
+        {
+
+        }
 
     }
 
