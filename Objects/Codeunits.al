@@ -5481,6 +5481,39 @@ codeunit 90004 ThirdPartyIntegrations
     end;
 
     //------------------Eclectics Requests
+    internal procedure CreateMobileRequestLog(Description: Text[50]; RequestDate: Datetime; TransactionStatus: option Success,Fail)
+    begin
+
+    end;
+
+    procedure BlockATMCard(MemberNo: Code[20]; IDNumber: Code[20]; var ResponseCode: code[20]; var ResponseMessage: BigText)
+    var
+        Member: Record Members;
+        Vendor: Record Vendor;
+        ATMLedger: Record "ATM Ledger";
+    begin
+
+ResponseCode:='00';
+ResponseMessage.addText('{"Message":"ATM Card Blocked Successfully"}')
+    end;
+
+    procedure GetStandingOrderTypes(var ResponseCode:Code[20]; var ResponseMessage:BigText)
+    begin
+
+    end;
+
+    procedure SubmitStandingOrderRequest(MemberNo:Code[20];StandingOrderType:Code[20];AmountType:Option "Fixed",Sweep;Amount:Decimal;StandingOrderClass:Option "Internal","External","Loan-Principle","Loan-Interest","Loan Principle+Interest";
+    SalaryBased:Boolean;SourceAccountNo:Code[20];StartDate:Date;RunPeriod:Integer;DestinationMember:Code[20];DestinationAccount:Code[20];
+    ExtBankCode:Code[20];ExtBranchCode:Code[20];ExtAccountName:Code[100];ExtAccountNo:Code[20];PolicyNo:Code[20];
+    var ResponseCode:Code[20];var ResponseMessage:BigText)
+    var
+    SaccoSetup:Record "Sacco Setup";
+    STONumber:Record "Standing Orders";
+    begin
+ResonseCode:='00';
+ResponseMessage.addText('{"Message":"Standing Order Created Successfully","StandingOrderNumber":"'+STONumber+'"}')
+    end;
+
     procedure RemoveOnlineRequest(LoanNo: Code[20]; MemberNo: Code[20]; RequestType: Option Guarantor,Witness; var ResponseCode: Code[20]; var ResponseMessage: BigText)
     var
         OnlineGuarantorRequests: Record "Online Guarantor Requests";
@@ -5657,6 +5690,8 @@ codeunit 90004 ThirdPartyIntegrations
         DocumentUploads: Record "Document Uploads";
         Requests: Record "Online Guarantor Requests";
         OnlineLoanApplication: Record "Online Loan Application";
+        LoanApplication: Record "Loan Application";
+        BridgedPrinciple: Decimal;
         Members: Record Members;
         EconomicSectors: Record "Economic Sectors";
         SubSecotrs: Record "Economic Subsectors";
@@ -5757,9 +5792,14 @@ codeunit 90004 ThirdPartyIntegrations
                     BridgedLoans.SetRange("Loan No", OnlineLoanApplication."Application No");
                     if BridgedLoans.FindSet() then begin
                         repeat
-                            Tresp1.AddText('{"LoanNo":"' + Format(BridgedLoans."Recovery Code") + '",');
-                            Tresp1.AddText('"ProductName":"' + Format(BridgedLoans."Recovery Description") + '",');
-                            Tresp1.AddText('"BridgedAmount":"' + Format(BridgedLoans.Amount) + '"},');
+                            BridgedPrinciple := 0;
+                            if LoanApplication.Get(BridgedLoans."Recovery Code") then begin
+                                BridgedPrinciple := LoanApplication."Approved Amount";
+                                Tresp1.AddText('{"LoanNo":"' + Format(BridgedLoans."Recovery Code") + '",');
+                                Tresp1.AddText('"ProductName":"' + Format(BridgedLoans."Recovery Description") + '",');
+                                Tresp1.AddText('"BridgedPrinciple":"' + Format(BridgedPrinciple) + '",');
+                                Tresp1.AddText('"BridgedAmount":"' + Format(BridgedLoans.Amount) + '"},');
+                            end;
                         until BridgedLoans.Next() = 0;
                     end;
                     if STRLEN(FORMAT(Tresp1)) > 1 then

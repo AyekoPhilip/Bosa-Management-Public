@@ -13466,3 +13466,62 @@ table 90126 "Job Execution Entries"
     end;
 
 }
+
+table 90127 "ATM Ledger"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Entry No"; Integer)
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Entry Type"; Option)
+        {
+            OptionMembers = Activation,"CBS Blocking","Mobile Blocking",Unblocking;
+        }
+        field(3; "Requested On"; DateTime) { }
+        field(4; Status; Option)
+        {
+            OptionMembers = Success,Fail;
+        }
+        field(5; "User ID"; Code[100])
+        {
+            TableRelation = "User Setup";
+        }
+    }
+
+    keys
+    {
+        key(Key1; "Entry No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
