@@ -592,6 +592,10 @@ page 95000 "Credit Clerk"
                 {
                     group(Loans)
                     {
+                        action("SMS Ledger")
+                        {
+                            RunObject = page "SMS Ledger";
+                        }
                         action("New Loan Applications")
                         {
                             RunObject = page "New Online Loans";
@@ -1030,6 +1034,11 @@ page 95000 "Credit Clerk"
                     {
                         Image = PostApplication;
                         RunObject = report "Underpaid Principle";
+                    }
+                    action("Double Loans")
+                    {
+                        Image = PostApplication;
+                        RunObject = report "Double Loans";
                     }
                 }
                 action("Progression Report")

@@ -426,6 +426,7 @@ page 90005 "Member Applications"
                 field("Last Name"; Rec."Last Name") { }
                 field("Member Category"; Rec."Member Category") { }
                 field("Full Name"; Rec."Full Name") { }
+                field("Group Name"; "Group Name") { }
                 field("Global Dimension 1 Code"; Rec."Global Dimension 1 Code") { }
                 field("Global Dimension 2 Code"; Rec."Global Dimension 2 Code") { }
                 field("National ID No"; Rec."National ID No") { }
@@ -568,13 +569,23 @@ page 90006 "Member Application"
                         CurrPage.Update();
                     end;
                 }
-                field("National ID No"; Rec."National ID No") { }
+
                 field("Global Dimension 1 Code"; Rec."Global Dimension 1 Code") { }
                 field("Global Dimension 2 Code"; Rec."Global Dimension 2 Code") { }
                 field("Recruited By"; Rec."Recruited By") { }
                 field("Sales Person"; Rec."Sales Person") { }
-                field(Nationality; Rec.Nationality) { }
-                field("Mobile Transacting No"; Rec."Mobile Transacting No") { }
+                field(Nationality; Rec.Nationality)
+                {
+                    Visible = NOT isGroupMember;
+                }
+                field("National ID No"; Rec."National ID No")
+                {
+                    Visible = NOT isGroupMember;
+                }
+                field("Mobile Transacting No"; Rec."Mobile Transacting No")
+                {
+                    Visible = NOT isGroupMember;
+                }
                 field("Protected Account"; Rec."Protected Account")
                 {
                     trigger OnValidate()
@@ -590,6 +601,7 @@ page 90006 "Member Application"
                 }
                 group(Activatons)
                 {
+                    Visible = NOT isGroupMember;
                     field(ATM; Rec.ATM) { }
                     field(Mobile; Rec.Mobile) { }
                     field(Portal; Rec.Portal) { }
@@ -598,6 +610,7 @@ page 90006 "Member Application"
                 }
                 group("Portal Remarks")
                 {
+                    Visible = NOT isGroupMember;
                     field("Subscription Start Date"; Rec."Subscription Start Date") { }
                     field("Portal Status"; Rec."Portal Status") { }
                     field("Rejection Comments"; Rec."Rejection Comments") { }
@@ -902,7 +915,7 @@ page 90007 "Member Application Kins"
     ApplicationArea = All;
     UsageCategory = Lists;
     SourceTable = "Nexts of Kin";
-
+    CardPageId = "KIN Card";
     layout
     {
         area(Content)
@@ -1010,12 +1023,13 @@ page 90009 Members
                 field("Middle Name"; Rec."Middle Name") { }
                 field("Las Name"; Rec."Last Name") { }
                 field("Full Name"; Rec."Full Name") { }
+                field("Group Name"; "Group Name") { }
+                field("Group No"; "Group No") { }
                 field("National ID No"; Rec."National ID No") { }
                 field("Mobile Phone No."; rec."Mobile Phone No.") { }
                 field("Payroll No."; Rec."Payroll No.") { }
                 field("Date of Birth"; Rec."Date of Birth") { }
                 field("Reg. Fee Paid"; "Reg. Fee Paid") { }
-
                 field("Member Status"; rec."Member Status") { }
                 field("Employer Code"; Rec."Employer Code") { }
                 field("Date of Registration"; "Date of Registration") { }
@@ -1304,6 +1318,10 @@ page 90010 Member
             {
                 SubPageLink = "Member No." = field("Member No.");
             }
+            part("Document Attachment Factbox"; "Document Attachment Factbox")
+            {
+                SubPageLink = "Table ID" = const(90008), "No." = field("Member No.");
+            }
         }
     }
 
@@ -1311,6 +1329,20 @@ page 90010 Member
     {
         area(Processing)
         {
+            action("Next of Kins")
+            {
+                Image = AccountingPeriods;
+                RunObject = page "Member Kins(RO)";
+                RunPageLink = "Source Code" = field("Member No.");
+                Promoted = true;
+            }
+            action("Group Signatories")
+            {
+                Image = Administration;
+                RunObject = page "Signatories & Directors(RO)";
+                RunPageLink = "Source Code" = field("Member No.");
+                Promoted = true;
+            }
             action("Additional Controls")
             {
                 Image = LotInfo;
@@ -1842,11 +1874,13 @@ page 90016 "Member Statistics Factbox"
                 field("Full Name"; Rec."Full Name") { }
                 field("National ID No"; Rec."National ID No") { }
                 field("Mobile Phone No."; Rec."Mobile Phone No.") { }
+                field("Part of Group"; "Part of Group") { }
             }
             group("Account Information")
             {
                 field("Total Deposits"; Rec."Total Deposits") { }
                 field("Total Shares"; Rec."Total Shares") { }
+                field("Prior Year Dividend"; "Prior Year Dividend") { }
                 field("Held Collateral"; Rec."Held Collateral") { }
                 field("Running Loans"; Rec."Running Loans") { }
                 field("Outstanding Loans"; Rec."Outstanding Loans") { }
@@ -1857,7 +1891,7 @@ page 90016 "Member Statistics Factbox"
                 field("Self Guarantee"; Rec."Self Guarantee") { }
                 field("Non-Self Guarantee"; Rec."Non-Self Guarantee") { }
                 field("Qualified Self Guarantee"; LoansManagement.GetSelfGuaranteeEligibility(Rec."Member No.")) { }
-                field("Qualified Non Self Guarantee"; LoansManagement.GetNonSelfGuaranteeEligibility(Rec."Member No.")) { }
+                field("Free Deposits"; LoansManagement.GetNonSelfGuaranteeEligibility(Rec."Member No.")) { }
             }
         }
     }
@@ -4193,12 +4227,13 @@ page 90043 "Loan Details Factbox"
     var
         Portal: Codeunit PortalIntegrations;
         MemberMgt: Codeunit "Member Management";
-        DepositsToDate: Decimal;
+        DepositsToDate, RMFToDate : Decimal;
 
     trigger OnAfterGetRecord()
     begin
         DepositsToDate := 0;
-        DepositsToDate := MemberMgt.GetDepositsCurrYear("Member No.", "Application Date");
+        RMFToDate := 0;
+        MemberMgt.GetDepositsCurrYear("Member No.", "Application Date", DepositsToDate, RMFToDate);
     end;
 }
 
@@ -5056,6 +5091,12 @@ page 90052 "Member Editing"
                 RunPageLink = "Source Code" = field("Document No.");
                 Image = StepInto;
             }
+            action("Signatories")
+            {
+                RunObject = page "Signatories & Directors";
+                RunPageLink = "Source Code" = field("Document No.");
+                Image = StepInto;
+            }
         }
     }
     trigger OnOpenPage()
@@ -5834,13 +5875,22 @@ page 90060 "Member Versions"
     {
         area(Processing)
         {
-            action(ActionName)
+            action("Open Document")
             {
                 ApplicationArea = All;
-
+                Image = Document;
                 trigger OnAction();
+                var
+                    MemberEditing: Record "Member Editing";
+                    MemberUpdate: Page "Member Editing(RO)";
                 begin
-
+                    clear(MemberUpdate);
+                    MemberEditing.Reset();
+                    MemberEditing.SetRange("Document No.", "Document No.");
+                    if MemberEditing.FindSet() then begin
+                        MemberUpdate.SetTableView(MemberEditing);
+                        MemberUpdate.RunModal();
+                    end;
                 end;
             }
         }
@@ -17278,6 +17328,7 @@ page 90226 "Online Guarantor Sub Requests"
                 {
                     Editable = isSoap;
                 }
+                field("Outstanding Guarantee"; "Outstanding Guarantee") { }
             }
         }
     }
@@ -17884,6 +17935,7 @@ page 90235 "Signatories & Directors"
     ApplicationArea = All;
     UsageCategory = Lists;
     SourceTable = "Group & Company Members";
+    CardPageId = "Signatories Card";
     layout
     {
         area(Content)
@@ -20586,6 +20638,8 @@ page 90277 "Online Application"
                 field("Member Deposits"; LoansManagement.GetMemberDeposits(Rec."Member No.")) { }
                 field("Expected Amount"; LoansManagement.GetNetAmount(Rec."Application No")) { }
                 field("Maximum Repayment Period"; "Maximum Repayment Period") { }
+                field(DepositsToDate; DepositsToDate) { }
+                field(RMFToDate; RMFToDate) { }
 
             }
         }
@@ -20644,6 +20698,7 @@ page 90277 "Online Application"
     trigger OnOpenPage()
     begin
         isOpen := (Rec."Approval Status" = Rec."Approval Status"::New);
+        MemberMgt.GetDepositsCurrYear("Member No.", "Application Date", DepositsToDate, RMFToDate);
     end;
 
     trigger OnAfterGetRecord()
@@ -20658,6 +20713,8 @@ page 90277 "Online Application"
         ApprovalsMgmtExt: Codeunit "Approval Mgmt. Ext";
         isOpen: Boolean;
         Portal: Codeunit PortalIntegrations;
+        DepositsToDate, RMFTodate : Decimal;
+        MemberMgt: Codeunit "Member Management";
 }
 page 90278 "Online Application(RO)"
 {
@@ -22466,6 +22523,582 @@ page 90303 "Job Execution Entries"
                 field("Member No"; "Member No") { }
                 field("Task Type"; "Task Type") { }
                 field("Transactions Count"; "Transactions Count") { }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
+            }
+        }
+    }
+}
+
+page 90304 "Signatories Card"
+{
+    PageType = Card;
+    ApplicationArea = All;
+    UsageCategory = Administration;
+    SourceTable = "Group & Company Members";
+
+    layout
+    {
+        area(Content)
+        {
+            group("General Information")
+            {
+                field(Designation; Designation) { }
+                field("SACCO Member No"; "SACCO Member No") { }
+                field("Full Name"; "Full Name") { }
+                field("National ID No"; "National ID No") { }
+                field("Phone No"; "Phone No") { }
+            }
+            group(Images)
+            {
+                field(Signature; Signature) { }
+                field("Passport Image"; "Passport Image") { }
+            }
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                begin
+
+                end;
+            }
+        }
+    }
+
+    var
+        myInt: Integer;
+}
+
+page 90305 "KIN Card"
+{
+    PageType = Card;
+    ApplicationArea = All;
+    UsageCategory = Administration;
+    SourceTable = "Nexts of Kin";
+
+    layout
+    {
+        area(Content)
+        {
+            group(GroupName)
+            {
+                field("Kin Type"; "Kin Type") { }
+                field("KIN ID"; "KIN ID") { }
+                field("Date of Birth"; "Date of Birth") { }
+                field(Name; Name) { }
+                field("Phone No."; "Phone No.") { }
+                field(Allocation; Allocation) { }
+            }
+            group(Image)
+            {
+                field("Passport Image"; "Passport Image") { }
+                field("Identification Document"; "Identification Document") { }
+            }
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                begin
+
+                end;
+            }
+        }
+    }
+
+    var
+        myInt: Integer;
+}
+page 90306 "KIN Card(RO)"
+{
+    PageType = Card;
+    ApplicationArea = All;
+    UsageCategory = Administration;
+    SourceTable = "Nexts of Kin";
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            group(GroupName)
+            {
+                field("Kin Type"; "Kin Type") { }
+                field("KIN ID"; "KIN ID") { }
+                field("Date of Birth"; "Date of Birth") { }
+                field(Name; Name) { }
+                field("Phone No."; "Phone No.") { }
+                field(Allocation; Allocation) { }
+            }
+            group(Image)
+            {
+                field("Passport Image"; "Passport Image") { }
+                field("Identification Document"; "Identification Document") { }
+            }
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                begin
+
+                end;
+            }
+        }
+    }
+
+    var
+        myInt: Integer;
+}
+page 90307 "Member Kins(RO)"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Nexts of Kin";
+    CardPageId = "KIN Card(RO)";
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            repeater(General)
+            {
+                field("Source Code"; Rec."Source Code") { }
+                field("Kin Type"; Rec."Kin Type")
+                {
+                    ApplicationArea = All;
+
+                }
+                field("KIN ID"; Rec."KIN ID") { }
+                field(Name; Rec.Name) { }
+                field("Date of Birth"; Rec."Date of Birth") { }
+                field("Phone No."; Rec."Phone No.") { }
+                field(Allocation; Rec.Allocation) { }
+
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
+            }
+        }
+    }
+}
+page 90308 "Signatories & Directors(RO)"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Group & Company Members";
+    CardPageId = "Signatories Card(RO)";
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field(Designation; Rec.Designation) { }
+                field("Full Name"; Rec."Full Name") { }
+                field("National ID No"; Rec."National ID No") { }
+                field("Phone No"; Rec."Phone No") { }
+                field("Source Code"; Rec."Source Code")
+                {
+                    Visible = NOT IsWindowsClient;
+                }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(Images)
+            {
+                ApplicationArea = All;
+                RunObject = page "Signatory Images";
+                RunPageLink = "Entry No." = field("Entry No."), "Source Code" = field("Source Code"), Type = field(Type);
+            }
+        }
+    }
+    var
+        IsWindowsClient: Boolean;
+
+    trigger OnAfterGetRecord()
+    begin
+        IsWindowsClient := (CurrentClientType = ClientType::Windows);
+    end;
+
+    trigger OnOpenPage()
+    begin
+        IsWindowsClient := (CurrentClientType = ClientType::Windows);
+    end;
+}
+page 90309 "Signatories Card(RO)"
+{
+    PageType = Card;
+    ApplicationArea = All;
+    UsageCategory = Administration;
+    SourceTable = "Group & Company Members";
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            group("General Information")
+            {
+                field(Designation; Designation) { }
+                field("SACCO Member No"; "SACCO Member No") { }
+                field("Full Name"; "Full Name") { }
+                field("National ID No"; "National ID No") { }
+                field("Phone No"; "Phone No") { }
+            }
+            group(Images)
+            {
+                field(Signature; Signature) { }
+                field("Passport Image"; "Passport Image") { }
+            }
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                begin
+
+                end;
+            }
+        }
+    }
+
+    var
+        myInt: Integer;
+}
+page 90310 "Member Editings(RO)"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "Member Editing";
+    CardPageId = "Member Editing(RO)";
+    SourceTableView = where(Processed = const(true));
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            repeater(General)
+            {
+                field("Document No."; Rec."Document No.")
+                {
+                    ApplicationArea = All;
+
+                }
+                field("Member No."; Rec."Member No.") { }
+                field("First Name"; Rec."First Name") { }
+                field("Middle Name"; Rec."Middle Name") { }
+                field("Las Name"; Rec."Last Name") { }
+                field("Full Name"; Rec."Full Name") { }
+                field("National ID No"; Rec."National ID No") { }
+                field("Created By"; Rec."Created By") { }
+                field("Created On"; Rec."Created On") { }
+                field("Approval Status"; Rec."Approval Status") { }
+                field(Approvals; Rec.Approvals) { }
+                field("Change Type"; "Change Type") { }
+                field("Portal Status"; "Portal Status") { }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
+            }
+        }
+    }
+}
+page 90311 "Member Editing(RO)"
+{
+    PageType = Card;
+    ApplicationArea = All;
+    UsageCategory = Administration;
+    SourceTable = "Member Editing";
+    InsertAllowed = false;
+    ModifyAllowed = false;
+    DeleteAllowed = false;
+    layout
+    {
+        area(Content)
+        {
+            group(General)
+            {
+                Editable = isOpen;
+                field("Document No."; Rec."Document No.")
+                {
+                    ApplicationArea = All;
+
+                }
+                field("Protected Account"; Rec."Protected Account") { }
+                field("Account Owner"; Rec."Account Owner") { }
+            }
+            group("Basic Information")
+            {
+                Editable = isOpen;
+                Visible = NOT isGroupMember;
+                field("Member No."; rec."Member No.")
+                {
+                    trigger OnValidate()
+                    begin
+                        CurrPage.Update();
+                    end;
+                }
+                field("Change Type"; "Change Type") { }
+                field("Update KINS"; Rec."Update KINS") { }
+                field("First Name"; Rec."First Name") { }
+                field("Middle Name"; Rec."Middle Name") { }
+                field("Last Name"; Rec."Last Name") { }
+                field("Full Name"; Rec."Full Name") { }
+                field("Mobile Transacting No"; "Mobile Transacting No") { }
+                field("National ID No"; Rec."National ID No") { }
+                field("Date of Birth"; Rec."Date of Birth") { }
+                field(Occupation; Rec.Occupation) { }
+                field("Type of Residence"; Rec."Type of Residence") { }
+                field("Marital Status"; Rec."Marital Status") { }
+                field(Gender; Rec.Gender) { }
+                group("Employement Information")
+                {
+
+                    field("Employer Code"; Rec."Employer Code")
+                    {
+                        ShowMandatory = true;
+                    }
+                    field("Station Code"; Rec."Station Code")
+                    {
+                        ShowMandatory = true;
+                    }
+                    field(Designation; Rec.Designation)
+                    {
+                        ShowMandatory = true;
+                    }
+                    field("Payroll No."; Rec."Payroll No.")
+                    {
+                        ShowMandatory = true;
+                    }
+                }
+            }
+            group("Group Information")
+            {
+                Editable = isOpen;
+                Visible = isGroupMember;
+                field("Group Name"; Rec."Group Name") { }
+                field("Group No"; Rec."Group No") { }
+                field("Certificate of Incoop"; Rec."Certificate of Incoop") { }
+                field("Date of Registration"; Rec."Date of Registration") { }
+                field("Certificate Expiry"; rec."Certificate Expiry") { }
+                field("&KRA PIN"; Rec."KRA PIN") { }
+                field("&E-Mail Address"; Rec."E-Mail Address") { }
+                field("&Address"; Rec.Address) { }
+                field("&County"; Rec.County) { }
+                field("&Sub County"; Rec."Sub County") { }
+            }
+            group("Contacts and Addresses")
+            {
+                Editable = isOpen;
+                field("Mobile Phone No."; Rec."Mobile Phone No.") { }
+                field("Alt. Phone No"; Rec."Alt. Phone No") { }
+                field("E-Mail Address"; Rec."E-Mail Address") { }
+                field(Address; Rec.Address) { }
+                field(County; Rec.County) { }
+                field("Sub County"; Rec."Sub County") { }
+                field("Town of Residence"; Rec."Town of Residence") { }
+                field("Estate of Residence"; Rec."Estate of Residence") { }
+                field("KRA PIN"; Rec."KRA PIN") { }
+            }
+            group(Images)
+            {
+                Editable = isOpen;
+                field("Member Image"; Rec."Member Image") { }
+                field("Member Signature"; "Member Signature") { }
+                field("Front ID Image"; Rec."Front ID Image") { }
+                field("Back ID Image"; Rec."Back ID Image") { }
+            }
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(Comments)
+            {
+                ApplicationArea = all;
+                Image = ViewComments;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                    ApprovalsMgmt.GetApprovalComment(Rec);
+                end;
+            }
+            action(Approve)
+            {
+                ApplicationArea = all;
+                Image = Approve;
+                Promoted = true;
+                trigger OnAction();
+                var
+                    ApprovalsMgmt: Codeunit "Approvals Mgmt.";
+                begin
+                    IF NOT CONFIRM('Are you sure you want to Approve the document?') THEN
+                        EXIT;
+                    ApprovalsMgmt.ApproveRecordApprovalRequest(Rec.RECORDID);
+                    CurrPage.CLOSE();
+                end;
+            }
+            action("Next of Kins")
+            {
+                RunObject = page "Member Kins(RO)";
+                RunPageLink = "Source Code" = field("Document No.");
+                Image = StepInto;
+            }
+            action(Signatories)
+            {
+                RunObject = page "Signatories & Directors(RO)";
+                RunPageLink = "Source Code" = field("Document No.");
+                Image = StepInto;
+            }
+        }
+    }
+    trigger OnOpenPage()
+    begin
+        isOpen := (Rec."Approval Status" = Rec."Approval Status"::New);
+        isGroupMember := rec."Is Group";
+    end;
+
+    trigger OnAfterGetRecord()
+    begin
+        isOpen := (Rec."Approval Status" = Rec."Approval Status"::New);
+        isGroupMember := rec."Is Group";
+    end;
+
+    var
+        MemberManagement: Codeunit "Member Management";
+        ApprovalsMgmtExt: Codeunit "Approval Mgmt. Ext";
+        isOpen, isGroupMember : boolean;
+}
+
+page 90312 "SMS Ledger"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "SMS Ledger";
+    InsertAllowed = false;
+    DeleteAllowed = false;
+    ModifyAllowed = false;
+    SourceTableView = sorting("Entry No") order(descending);
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Entry No"; "Entry No") { }
+                field("Phone No"; "Phone No") { }
+                field("SMS Message"; "SMS Message") { }
+                field("Created By"; "Created By") { }
+                field("Sent On"; "Sent On") { }
             }
         }
         area(Factboxes)

@@ -294,6 +294,7 @@ tableextension 90019 "BOSA_User Setup Ext." extends "User Setup"
     {
         // Add changes to table fields here
         field(90001; "View Protected Account"; Boolean) { }
+        field(90002; "Current Session"; Integer) { }
     }
 
     var

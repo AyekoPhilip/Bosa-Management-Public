@@ -977,13 +977,14 @@ report 90009 "Member Statement"
                     OpenningBalance := 0;
                     RunningBalance := 0;
                     if Member.Get(Vendor."Member No.") then;
-                    DetailedEntries.Reset();
-                    DetailedEntries.SetRange("Vendor No.", Vendor."No.");
-                    if RangeMin <> 0D then
+                    if RangeMin <> 0D then begin
+                        DetailedEntries.Reset();
+                        DetailedEntries.SetRange("Vendor No.", Vendor."No.");
                         DetailedEntries.SetFilter("Posting Date", '..%1', RangeMin);
-                    if DetailedEntries.FindSet() then begin
-                        DetailedEntries.CalcSums(Amount);
-                        OpenningBalance := DetailedEntries.Amount;
+                        if DetailedEntries.FindSet() then begin
+                            DetailedEntries.CalcSums(Amount);
+                            OpenningBalance := DetailedEntries.Amount;
+                        end;
                     end;
                     OpenningBalance := RunningBalance;
                 end;
@@ -1034,6 +1035,32 @@ report 90009 "Member Statement"
                     RunningBalance := OpenningBalance;
                     ProductName := '';
                     ProductName := "Loan Application"."Product Description";
+                    DateFilter := '';
+                    LoanFilter := '';
+                    AccountFilter := '';
+                    LoanFilter := Member.GetFilter("Loan Filter");
+                    AccountFilter := Member.GetFilter("Account Filter");
+                    DateFilter := Member.GetFilter("Date Filter");
+                    if DateFilter <> '' then begin
+                        OpenningBalance := 0;
+                        RunningBalance := 0;
+                        DateRec.Reset();
+                        DateRec.SetFilter("Period Start", DateFilter);
+                        if DateRec.FindSet() then begin
+                            RangeMin := DateRec.GetRangeMin("Period Start");
+                            RangeMin := CalcDate('-1D', RangeMin);
+                        end;
+                    end;
+                    if RangeMin <> 0D then begin
+                        DetailedEntries.Reset();
+                        DetailedEntries.SetRange("Loan No.", "Loan Application"."Application No");
+                        DetailedEntries.SetFilter("Posting Date", '..%1', RangeMin);
+                        DetailedEntries.SetRange("Vendor No.", "Loan Application"."Loan Account");
+                        if DetailedEntries.FindSet() then begin
+                            DetailedEntries.CalcSums(Amount);
+                            OpenningBalance := DetailedEntries.Amount;
+                        end;
+                    end;
                 end;
 
                 trigger OnPreDataItem()
@@ -1052,12 +1079,6 @@ report 90009 "Member Statement"
 
             trigger OnAfterGetRecord()
             begin
-                DateFilter := '';
-                LoanFilter := '';
-                AccountFilter := '';
-                LoanFilter := Member.GetFilter("Loan Filter");
-                AccountFilter := Member.GetFilter("Account Filter");
-                DateFilter := Member.GetFilter("Date Filter");
             end;
         }
     }
@@ -1911,7 +1932,6 @@ report 90021 "Cash Receipt"
             column(Posting_Date; "Posting Date") { }
             column(Posting_Description; "Posting Description") { }
             column(Amount; Amount) { }
-
             column("CompanyLogo"; CompanyInformation.Picture) { }
             column("CompanyName"; CompanyInformation.Name) { }
             column("CompanyAddress1"; CompanyInformation.Address) { }
@@ -3170,6 +3190,8 @@ report 90035 "Member Guarantees"
                         LoanClassification := Format(LoanApplication."Loan Classification");
                         Arrears := LoanApplication."Total Arrears";
                         OutstandingGrnt := MemberMgt.GetOutstandingGuarantee(LoanApplication."Application No", "Loan Guarantees"."Member No");
+                        if OutstandingGrnt = 0 then
+                            CurrReport.Skip();
                         if Substituted then begin
                             if GuarantorHder.Get("Document No.") then
                                 ReplaceDate := GuarantorHder."Posting Date";
@@ -5060,6 +5082,66 @@ report 90051 "Underpaid Principle"
         LoanAge: Integer;
 
 }
+report 90052 "Double Loans"
+{
+    PreviewMode = Normal;
+    UsageCategory = Administration;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\DoubleLoans.rdl';
+    dataset
+    {
+        dataitem(Members; Members)
+        {
+            column(Member_No_; "Member No.") { }
+            column(Payroll_No; "Payroll No") { }
+            column(Full_Name; "Full Name") { }
+            dataitem("Loan Application"; "Loan Application")
+            {
+                DataItemLink = "Member No." = field("Member No.");
+                DataItemTableView = sorting("Application No") where("Loan Balance" = filter(<> 0));
+                column(Application_No; "Application No") { }
+                column(Product_Code; "Product Code") { }
+                column(Applied_Amount; "Applied Amount") { }
+                column(Approved_Amount; "Approved Amount") { }
+                column(Loan_Balance; "Loan Balance") { }
+            }
+            trigger OnAfterGetRecord()
+            begin
+                if not LoansMgt.HasDoubleLoan(Members."Member No.") then
+                    CurrReport.Skip();
+            end;
+        }
+    }
 
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+
+    var
+        LoansMgt: Codeunit "Loans Management";
+}
 //report 90015,90031
 //Ru9Novt5n+Kqf

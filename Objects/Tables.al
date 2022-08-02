@@ -1128,6 +1128,15 @@ table 90006 "Nexts of Kin"
         }
         field(7; Name; Text[150]) { }
 
+        field(8; "Passport Image"; blob)
+        {
+            Subtype = Bitmap;
+        }
+        field(9; "Identification Document"; blob)
+        {
+            Subtype = Bitmap;
+        }
+
     }
 
     keys
@@ -1511,6 +1520,16 @@ table 90008 "Members"
         }
         field(75; "Guarantee Blocked"; Boolean) { }
         field(76; "Reg. Fee Paid"; Boolean) { }
+        field(77; "Part of Group"; Boolean)
+        {
+            Editable = false;
+            FieldClass = FlowField;
+            CalcFormula = exist("Group & Company Members" where("SACCO Member No" = field("Member No.")));
+        }
+        field(78; "Prior Year Dividend"; Decimal)
+        {
+            Editable = false;
+        }
 
 
     }
@@ -4808,9 +4827,10 @@ table 90037 "Member Editing"
             trigger OnValidate()
             var
                 MemberKins, MemberKins1 : Record "Nexts of Kin";
+                Signatories, Signatories1 : Record "Group & Company Members";
             begin
                 Member.Get("Member No.");
-                Member.CalcFields("Member Image", "Front ID Image", "Back ID Image");
+                Member.CalcFields("Member Image", "Front ID Image", "Back ID Image", "Member Signature");
                 "First Name" := Member."First Name";
                 "Middle Name" := Member."Middle Name";
                 "Last Name" := Member."Last Name";
@@ -4854,7 +4874,20 @@ table 90037 "Member Editing"
                 "Protected Account" := Member."Protected Account";
                 "Account Owner" := Member."Account Owner";
                 "Mobile Transacting No" := Member."Mobile Transacting No";
+                "Member Signature" := Member."Member Signature";
                 Validate("Full Name");
+                Signatories.Reset();
+                Signatories.SetRange("Source Code", "Member No.");
+                if Signatories.FindSet() then begin
+                    repeat
+                        Signatories1.Init();
+                        Signatories1.TransferFields(Signatories, false);
+                        Signatories1."Source Code" := "Document No.";
+                        Signatories1."Entry No." := Signatories."Entry No.";
+                        Signatories1.Type := Signatories.Type;
+                        Signatories1.Insert();
+                    until Signatories.Next() = 0;
+                end;
             end;
         }
         field(3; "First Name"; Text[50])
@@ -5315,6 +5348,10 @@ table 90038 "Member Versions"
             OptionMembers = Kenyan,Diaspora;
         }
         field(42; "Mobile Transacting No"; Code[20]) { }
+        field(43; "Signature"; blob)
+        {
+            Subtype = Bitmap;
+        }
     }
 
     keys
@@ -11015,6 +11052,7 @@ table 90101 "Online Guarantor Sub."
         field(8; "Requested On"; DateTime) { }
         field(9; "Responded On"; DateTime) { }
         field(10; "Accepted Amount"; Decimal) { }
+        field(11; "Outstanding Guarantee"; Decimal) { }
     }
 
     keys
@@ -11359,7 +11397,8 @@ table 90105 "Cheque Book Transactions"
 table 90106 "Group & Company Members"
 {
     DataClassification = ToBeClassified;
-
+    DrillDownPageId = "Signatories & Directors";
+    LookupPageId = "Signatories & Directors";
     fields
     {
         field(1; "Source Code"; Code[20]) { }
@@ -11383,6 +11422,10 @@ table 90106 "Group & Company Members"
         {
             Subtype = Bitmap;
         }
+        field(10; "SACCO Member No"; Code[20])
+        {
+            TableRelation = Members;
+        }
     }
 
     keys
@@ -11391,6 +11434,7 @@ table 90106 "Group & Company Members"
         {
             Clustered = true;
         }
+        key(Key2; "SACCO Member No") { }
     }
 
     var
@@ -13491,6 +13535,55 @@ table 90127 "ATM Ledger"
         {
             TableRelation = "User Setup";
         }
+    }
+
+    keys
+    {
+        key(Key1; "Entry No")
+        {
+            Clustered = true;
+        }
+    }
+
+    var
+        myInt: Integer;
+
+    trigger OnInsert()
+    begin
+
+    end;
+
+    trigger OnModify()
+    begin
+
+    end;
+
+    trigger OnDelete()
+    begin
+
+    end;
+
+    trigger OnRename()
+    begin
+
+    end;
+
+}
+table 90128 "SMS Ledger"
+{
+    DataClassification = ToBeClassified;
+
+    fields
+    {
+        field(1; "Entry No"; Integer)
+        {
+            DataClassification = ToBeClassified;
+
+        }
+        field(2; "Phone No"; Code[20]) { }
+        field(3; "SMS Message"; Text[250]) { }
+        field(4; "Created By"; Code[100]) { }
+        field(5; "Sent On"; DateTime) { }
     }
 
     keys
