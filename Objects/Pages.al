@@ -157,6 +157,8 @@ page 90002 "Product Factory"
                 {
                     StyleExpr = StyleText;
                 }
+                field("Processing Fee Acc."; "Processing Fee Acc.") { }
+                field("B2C Acc."; "B2C Acc.") { }
                 field("Loan Charges"; Rec."Loan Charges")
                 {
                     StyleExpr = StyleText;
@@ -1667,6 +1669,7 @@ page 90014 Receipt
                 field("Posting Date"; Rec."Posting Date") { }
                 field("Receiving Account Type"; Rec."Receiving Account Type") { }
                 field("Receiving Account No."; Rec."Receiving Account No.") { }
+                field("Mannual Receipt No."; "Mannual Receipt No.") { }
                 field("External Document No."; Rec."External Document No.") { }
                 field("Receiving Account Name"; Rec."Receiving Account Name") { }
                 field("Global Dimension 1 Code"; Rec."Global Dimension 1 Code") { }
@@ -3768,6 +3771,7 @@ page 90037 "Loan Interest Bands"
                 field("Min Installments"; Rec."Min Installments") { }
                 field("Max Installments"; Rec."Max Installments") { }
                 field("Interest Rate"; Rec."Interest Rate") { }
+                field("Processing Fee"; "Processing Fee") { }
                 field(Active; Rec.Active) { }
             }
         }
@@ -8285,6 +8289,7 @@ page 90097 "Member Images"
                 field("Front ID Image"; Rec."Front ID Image") { }
                 field("Back ID Image"; Rec."Back ID Image") { }
                 field("Member Image"; Rec."Member Image") { }
+                field("Member Signature"; "Member Signature") { }
             }
         }
     }
@@ -9230,6 +9235,7 @@ page 90112 "ATM Transactions"
     ApplicationArea = All;
     UsageCategory = Lists;
     SourceTable = "ATM Transactions";
+    SourceTableView = sorting("Entry No.") order(descending);
     InsertAllowed = false;
     DeleteAllowed = false;
     ModifyAllowed = false;
@@ -17000,7 +17006,8 @@ page 90222 "Posted Checkoffs"
 
                 trigger OnAction()
                 begin
-
+                    "Upload Type" := "Upload Type"::Salary;
+                    Modify();
                 end;
             }
         }
@@ -23095,6 +23102,7 @@ page 90312 "SMS Ledger"
             repeater(GroupName)
             {
                 field("Entry No"; "Entry No") { }
+                field("SMS Source"; "SMS Source") { }
                 field("Phone No"; "Phone No") { }
                 field("SMS Message"; "SMS Message") { }
                 field("Created By"; "Created By") { }

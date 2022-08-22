@@ -64,8 +64,11 @@ End Function
   <DataSets>
     <DataSet Name="DataSet_Result">
       <Fields>
-        <Field Name="Member_No_">
-          <DataField>Member_No_</DataField>
+        <Field Name="Code">
+          <DataField>Code</DataField>
+        </Field>
+        <Field Name="Name">
+          <DataField>Name</DataField>
         </Field>
         <Field Name="CompanyLogo">
           <DataField>CompanyLogo</DataField>
@@ -84,30 +87,6 @@ End Function
         </Field>
         <Field Name="CompanyEmail">
           <DataField>CompanyEmail</DataField>
-        </Field>
-        <Field Name="Full_Name">
-          <DataField>Full_Name</DataField>
-        </Field>
-        <Field Name="National_ID_No">
-          <DataField>National_ID_No</DataField>
-        </Field>
-        <Field Name="Mobile_Phone_No_">
-          <DataField>Mobile_Phone_No_</DataField>
-        </Field>
-        <Field Name="Alt__Phone_No">
-          <DataField>Alt__Phone_No</DataField>
-        </Field>
-        <Field Name="Gender">
-          <DataField>Gender</DataField>
-        </Field>
-        <Field Name="Date_of_Birth">
-          <DataField>Date_of_Birth</DataField>
-        </Field>
-        <Field Name="Payroll_No">
-          <DataField>Payroll_No</DataField>
-        </Field>
-        <Field Name="Date_of_Registration">
-          <DataField>Date_of_Registration</DataField>
         </Field>
       </Fields>
       <Query>

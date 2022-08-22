@@ -234,6 +234,9 @@ pageextension 90010 "BOSA_User Setup Ext" extends "User Setup"
         addafter("Register Time")
         {
             field("View Protected Account"; Rec."View Protected Account") { }
+            field("Current Session"; "Current Session") { }
+            field("Global Dimension 1 Code"; "Global Dimension 1 Code") { }
+            field("Global Dimension 2 Code"; "Global Dimension 2 Code") { }
         }
     }
 

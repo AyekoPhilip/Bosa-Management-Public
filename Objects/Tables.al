@@ -596,6 +596,14 @@ table 90001 "Product Factory"
         field(81; "Special Loan Multiplier"; Boolean) { }
         field(82; "Cash Transfer Allowed"; Boolean) { }
         field(83; "Max. Running Loans"; Integer) { }
+        field(84; "Processing Fee Acc."; Code[20])
+        {
+            TableRelation = "G/L Account";
+        }
+        field(85; "B2C Acc."; Code[20])
+        {
+            TableRelation = "Bank Account";
+        }
 
     }
 
@@ -2127,6 +2135,7 @@ table 90013 "Receipt Header"
             OptionMembers = New,"Approval Pending",Approved;
             Editable = false;
         }
+        field(17; "Mannual Receipt No."; Code[100]) { }
     }
 
     keys
@@ -2144,15 +2153,21 @@ table 90013 "Receipt Header"
         Customer: Record Customer;
         Vendor: Record Vendor;
         GLAccount: Record "G/L Account";
+        Employee: Record Employee;
+        UserSetup: Record "User Setup";
 
     trigger OnInsert()
     begin
         SaccoSetup.get;
         SaccoSetup.TestField("Receipt Nos.");
-        "Receipt No." := NoSeries.GetNextNo(SaccoSetup."Receipt Nos.", Today, true);
+        if "Receipt No." = '' then
+            "Receipt No." := NoSeries.GetNextNo(SaccoSetup."Receipt Nos.", Today, true);
         "Created By" := UserId;
         "Created On" := CurrentDateTime;
         "Posting Date" := today;
+        UserSetup.Get(UserId);
+        "Global Dimension 1 Code" := UserSetup."Global Dimension 1 Code";
+        "Global Dimension 2 Code" := UserSetup."Global Dimension 2 Code";
     end;
 
     trigger OnModify()
@@ -2203,7 +2218,7 @@ table 90014 "Receipt Lines"
 
         field(4; Description; Text[50])
         {
-            Editable = false;
+            //Editable = false;
         }
         field(5; "Posting Type"; Option)
         {
@@ -2238,6 +2253,8 @@ table 90014 "Receipt Lines"
         {
             Editable = false;
             trigger OnValidate()
+            var
+                LoanApplication: Record "Loan Application";
             begin
                 if "Posting Type" IN ["Posting Type"::"Customer Receipt", "Posting Type"::"Inter Bank", "Posting Type"::"Service Receipt", "Posting Type"::"Vendor Receipt"] then begin
                     "Bal. Account No." := "Account Type";
@@ -2257,13 +2274,20 @@ table 90014 "Receipt Lines"
                                 IF Vendor.get(ProductFactory.Prefix + "Member No.") THEN
                                     "Bal. Account No." := Vendor."No.";
                             end;
+                            LoanApplication.Reset();
+                            LoanApplication.SetRange("Member No.", "Member No.");
+                            LoanApplication.SetRange("Product Code", "Account Type");
+                            LoanApplication.SetFilter("Loan Balance", '>0');
+                            if LoanApplication.FindFirst() then
+                                "Loan No." := LoanApplication."Application No";
+                            Validate("Loan No.");
                         end;
                 end;
             end;
         }
         field(9; "Loan No."; Code[20])
         {
-            TableRelation = "Loan Application" where("Member No." = field("Member No."));
+            TableRelation = "Loan Application" where("Member No." = field("Member No."), "Loan Balance" = filter('>0'));
             trigger OnValidate()
             var
                 LoansMgt: Codeunit "Loans Management";
@@ -4393,6 +4417,11 @@ table 90032 "Product Interest Bands"
                     Error('Maximum Installments Cannot be greater than Minimum Installments');
             end;
         }
+        field(7; "Processing Fee"; Decimal)
+        {
+            MinValue = 0;
+            MaxValue = 100;
+        }
     }
 
     keys
@@ -5688,8 +5717,9 @@ table 90042 "Loan Calculator"
             trigger OnValidate()
             var
                 Tparty: Codeunit ThirdPartyIntegrations;
+                ProcessingFee: Decimal;
             begin
-                "Interest Rate" := Tparty.GetInterestRate("Loan Product");
+                "Interest Rate" := Tparty.GetInterestRate("Loan Product", "Installments (Months)", ProcessingFee);
                 "Repayment Start Date" := Today;
             end;
         }
@@ -6685,10 +6715,10 @@ table 90052 "Teller Transactions"
             begin
                 Vendor.Reset();
                 Vendor.SetRange("Member No.", "Member No");
-                /*if "Transaction Type" = "Transaction Type"::"Cash Withdrawal" then
+                if "Transaction Type" = "Transaction Type"::"Cash Withdrawal" then
                     Vendor.SetRange("Cash Withdrawal Allowed", true)
                 else
-                    Vendor.SetRange("Cash Deposit Allowed", true);*/
+                    Vendor.SetRange("Cash Deposit Allowed", true);
                 Vendor.SetFilter("Account Class", '<>%1', Vendor."Account Class"::Loan);
                 IF PAGE.RUNMODAL(0, Vendor) = ACTION::LookupOK THEN BEGIN
                     VALIDATE("Account No", Vendor."No.");
@@ -8530,7 +8560,8 @@ table 90067 "Checkoff Header"
     begin
         SaccoSetup.get;
         SaccoSetup.TestField("Checkoff Nos");
-        "Document No" := NoSeries.GetNextNo(SaccoSetup."Checkoff Nos", Today, true);
+        if "Document No" = '' then
+            "Document No" := NoSeries.GetNextNo(SaccoSetup."Checkoff Nos", Today, true);
         "Document Date" := Today;
         "Created By" := UserId;
         "Created On" := CurrentDateTime;
@@ -9853,6 +9884,7 @@ table 90084 "Mobile Transsactions"
             CalcFormula = lookup(Members."Full Name" where("Member No." = field("Dr_Member No")));
         }
         field(18; "Transaction Name"; Text[100]) { }
+        field(19; Skip; Boolean) { }
     }
     keys
     {
@@ -13584,6 +13616,7 @@ table 90128 "SMS Ledger"
         field(3; "SMS Message"; Text[250]) { }
         field(4; "Created By"; Code[100]) { }
         field(5; "Sent On"; DateTime) { }
+        field(6; "SMS Source"; Code[20]) { }
     }
 
     keys
@@ -13592,6 +13625,7 @@ table 90128 "SMS Ledger"
         {
             Clustered = true;
         }
+        key(Key2; "SMS Source") { }
     }
 
     var
@@ -13618,3 +13652,71 @@ table 90128 "SMS Ledger"
     end;
 
 }
+/*
+table 90129 "Non Members"
+{
+    DataClassification = ToBeClassified;
+    
+    fields
+    {
+        field(1;"National ID No"; Integer)
+        {
+            DataClassification = ToBeClassified;
+            
+        }
+        field(2;"First Name";Text[50]){
+            trigger OnValidate() begin
+                Validate("Full Name");
+            end;
+        }
+        field(3;"Middle Name";Text[50]){
+            trigger OnValidate() begin
+                Validate("Full Name");
+            end;
+        }
+        field(4;"Last Name";Text[50]){
+            trigger OnValidate() begin
+                Validate("Full Name");
+            end;
+        }
+        field(5;"Full Name";Text[50]){
+            Editable = false;
+            trigger OnValidate() begin
+                "Full Name" := "First Name"+' '+"Middle Name"+' '+"Last Name";
+            end;            
+        }
+    }
+    
+    keys
+    {
+        key(Key1; MyField)
+        {
+            Clustered = true;
+        }
+    }
+    
+    var
+        myInt: Integer;
+    
+    trigger OnInsert()
+    begin
+        
+    end;
+    
+    trigger OnModify()
+    begin
+        
+    end;
+    
+    trigger OnDelete()
+    begin
+        
+    end;
+    
+    trigger OnRename()
+    begin
+        
+    end;
+    
+}
+*/
