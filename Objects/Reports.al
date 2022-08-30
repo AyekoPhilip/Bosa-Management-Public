@@ -2902,6 +2902,7 @@ report 90032 "Checkoff Advise"
             column(ProductName; "Product Name") { }
             column(Loan_No; "Loan No") { }
             column(EmployerCode; "Employer Code") { }
+            column(Current_Balance_V2; "Current Balance") { }
 
             trigger OnAfterGetRecord()
             begin
@@ -5176,7 +5177,6 @@ report 90053 "Recover Entrance Fee - Q"
                 NotificationsMGT: Codeunit "Notifications Management";
                 SaccoSetup: Record "Sacco Setup";
                 EntranceFee, DepositBalance, PostingAmount : decimal;
-                Members: Record Members;
                 MemberMgt: Codeunit "Member Management";
                 LoansMgt: Codeunit "Loans Management";
                 DepositAccount: Code[20];
@@ -5191,6 +5191,8 @@ report 90053 "Recover Entrance Fee - Q"
                     EntranceFee := SaccoSetup."Reg. Fee";
                     MemberNo := '';
                     MemberNo := Members."Member No.";
+                    if MemberNo = '' then
+                        MemberNo := 'XXXXXX';
                     JobExecEntries.Reset();
                     JobExecEntries.SetRange("Document No", Format(Today));
                     JobExecEntries.SetRange("Member No", MemberNo);
@@ -5223,22 +5225,23 @@ report 90053 "Recover Entrance Fee - Q"
                             JournalManagement.CompletePosting(JournalTemplate, JournalBatch);
                             Members."Reg. Fee Paid" := true;
                             Members.Modify();
+                            JobExecEntries.LockTable();
+                            JobExecEntries.Reset();
+                            if JobExecEntries.FindLast() then
+                                LineNo := JobExecEntries."Entry No" + 1
+                            else
+                                LineNo := 1;
+                            JobExecEntries.Init();
+                            JobExecEntries."Document No" := Format(Today);
+                            JobExecEntries."Entry No" := LineNo;
+                            JobExecEntries."Member No" := MemberNo;
+                            JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Entrance Fee";
+                            JobExecEntries."Run Date" := CurrentDateTime;
+                            JobExecEntries.Insert();
+                            SMSSource := JournalBatch;
+                            SMSSource := 'ENT_FEE_RECOVERY';
+                            NotificationsMGT.SendSms(SMSNo, SMSText, SMSSource);
                         end;
-                        JobExecEntries.LockTable();
-                        JobExecEntries.Reset();
-                        if JobExecEntries.FindLast() then
-                            LineNo := JobExecEntries."Entry No" + 1
-                        else
-                            LineNo := 1;
-                        JobExecEntries.Init();
-                        JobExecEntries."Document No" := Format(Today);
-                        JobExecEntries."Entry No" := LineNo;
-                        JobExecEntries."Member No" := MemberNo;
-                        JobExecEntries."Task Type" := JobExecEntries."Task Type"::"Entrance Fee";
-                        JobExecEntries."Run Date" := CurrentDateTime;
-                        JobExecEntries.Insert();
-                        SMSSource := JournalBatch;
-                        NotificationsMGT.SendSms(SMSNo, SMSText, SMSSource);
                     end;
                 end;
             end;
@@ -5282,12 +5285,11 @@ report 90054 "Transfer Share Capital -Q"
             var
                 SaccoSetup: Record "Sacco Setup";
                 MinimumShares, DepositBalance, PostingAmount, SharesBalance : decimal;
-                Members: Record Members;
                 MemberMgt: Codeunit "Member Management";
                 LoansMgt: Codeunit "Loans Management";
                 DepositAccount: Code[20];
                 PostingDate: Date;
-                SharesAccount, JournalBatch, JournalTemplate, DocumentNo, MemberNo, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, SourceCode, ReasonCode, ExternalDocumentNo : Code[20];
+                SMSSource, SharesAccount, JournalBatch, JournalTemplate, DocumentNo, MemberNo, Dim1, Dim2, Dim3, Dim4, Dim5, Dim6, Dim7, Dim8, SourceCode, ReasonCode, ExternalDocumentNo : Code[20];
                 LineNo: Integer;
                 JournalManagement: Codeunit "Journal Management";
                 PostingDescription: Text[50];
@@ -5299,6 +5301,7 @@ report 90054 "Transfer Share Capital -Q"
                 GlobalTaskType: Option "Loan SMS","Share Transfer","Entrance Fee","Loan Recovery";
                 NotificationsMGT: Codeunit "Notifications Management";
             begin
+                SMSSource := 'SHARE_CAP_TRANSFER';
                 ProductFactory.Reset();
                 ProductFactory.SetRange("Share Capital", true);
                 if ProductFactory.FindFirst() then
@@ -5352,7 +5355,7 @@ report 90054 "Transfer Share Capital -Q"
                         SMSNo := Members."Mobile Phone No.";
                         SMSText := 'Dear ' + Members."First Name" + ' Kes. ' + Format(PostingAmount) + ' has been recovered from your deposits to share capital';
                         JournalBatch := 'SHARE_CAPITAL_TRANSFER';
-                        NotificationsMGT.SendSms(SMSNo, SMSText, JournalBatch);
+                        NotificationsMGT.SendSms(SMSNo, SMSText, SMSSource);
                     end;
                 end;
             end;
@@ -5405,7 +5408,6 @@ report 90055 "Send Mobi Loans Reminder - Q"
                 MemberNo, SMSSource : Code[20];
                 SMSMessage, SMSNo : text;
                 SMSSend: Codeunit "Notifications Management";
-                Members: Record Members;
                 GlobalTransactionType: Option General,"Cash Deposit","Cash Withdrawal",ATM,"Loan Disbursal","Interest Due","Interest Paid","Principle Paid","Mobile Dep","Mobile Wit","Acc. Transfer","Cheque Deposit","Bankers Cheque","Standing Order","Fixed Deposit","End Month Salary","Checkoff Pay","Inter Teller","Teller-Treasury","Disb. Rec","Mid Month Salary",Bonus,"Penalty Due","Penalty Paid";
                 GlobalAccountType: Option "G/L Account",Customer,Vendor,"Bank Account","Fixed Asset","IC Partner",Employee;
                 GlobalTaskType: Option "Loan SMS","Share Transfer","Entrance Fee","Loan Recovery";
@@ -5427,7 +5429,7 @@ report 90055 "Send Mobi Loans Reminder - Q"
                             SMSNo := Members."Mobile Phone No.";
                             SMSMessage := '';
                             LoanApplication.CalcFields("Loan Balance");
-                            SMSMessage := 'Dear ' + Members."First Name" + ' your ' + LoanApplication."Product Description" + ' of KSh. ' + Format(LoanApplication."Loan Balance") + 'issued on ' + format(LoanApplication."Posting Date") + ' will be due on ' + Format(LoanApplication."Repayment End Date");
+                            SMSMessage := 'Dear ' + Members."First Name" + ' your ' + LoanApplication."Product Description" + ' of KSh. ' + Format(LoanApplication."Loan Balance") + ' issued on ' + format(LoanApplication."Posting Date") + ' will be due on ' + Format(LoanApplication."Repayment End Date");
                             DueDateMinus7 := 0D;
                             DueDateMinus7 := CalcDate('-7D', LoanApplication."Repayment End Date");
                             JobExecEntries.Reset();
@@ -5498,6 +5500,7 @@ report 90056 "Recover Mobi Loans - Q"
     {
         dataitem(Members; Members)
         {
+            RequestFilterFields = "Member No.";
             trigger OnAfterGetRecord()
             var
                 SMSSource: Code[20];
@@ -5506,7 +5509,6 @@ report 90056 "Recover Mobi Loans - Q"
                 MemberNo: Code[20];
                 SMSMessage, SMSNo : text;
                 SMSSend: Codeunit "Notifications Management";
-                Members: Record Members;
                 Deposits, PrinciplePaid, InterestPaid : Decimal;
                 LoansMgt: Codeunit "Loans Management";
                 PostingDate: Date;
@@ -5526,7 +5528,7 @@ report 90056 "Recover Mobi Loans - Q"
                 LoanApplication.Reset();
                 LoanApplication.SetFilter("Loan Balance", '>0');
                 LoanApplication.SetRange("Product Code", 'L11');
-                LoanApplication.SetFilter("Repayment End Date", '<=%1', Today);
+                LoanApplication.SetFilter("Repayment End Date", '<%1', Today);
                 LoanApplication.SetRange("Member No.", Members."Member No.");
                 if LoanApplication.FindSet() then begin
                     repeat
@@ -5609,6 +5611,8 @@ report 90056 "Recover Mobi Loans - Q"
                             end;
                         end;
                     until LoanApplication.Next() = 0;
+                end else begin
+                    Message(LoanApplication.GetFilters);
                 end;
             end;
         }
@@ -5645,3 +5649,4 @@ report 90056 "Recover Mobi Loans - Q"
 }
 //report 90015,90031
 //Ru9Novt5n+Kqf
+//01907

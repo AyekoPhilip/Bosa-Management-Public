@@ -243,6 +243,16 @@ pageextension 90010 "BOSA_User Setup Ext" extends "User Setup"
     actions
     {
         // Add changes to page actions here
+        addfirst(Navigation)
+        {
+            action("BCRQ Setup")
+            {
+                Promoted = true;
+                Image = StepOver;
+                RunObject = page "BCRQ Setup";
+                RunPageLink = "User ID" = field("User ID");
+            }
+        }
     }
 
     var

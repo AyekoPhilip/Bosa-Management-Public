@@ -712,3 +712,172 @@ report 91007 "Collateral Register"
         LoanAge: Integer;
 
 }
+//Fred
+report 91008 "Cash With_Deposit Receipt "
+{
+    UsageCategory = ReportsAndAnalysis;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\Cash Receipt.rdl';
+    dataset
+    {
+        dataitem("Teller Transactions"; "Teller Transactions")
+        {
+            column(Document_No; "Document No") { }
+
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(Transaction_Type; "Transaction Type") { }
+            column(Member_No; "Member No") { }
+            column(Member_Name; "Member Name") { }
+            column(Account_No; "Account No") { }
+            column(Account_Name; "Account Name") { }
+            column(Amount; Amount) { }
+            column(Teller; Teller) { }
+            column(Till; Till) { }
+            column(Created_On; "Created On") { }
+            column(Posting_Date; "Posting Date") { }
+            column(Created_By; "Created By") { }
+            column(AmountInWords; AmountInWords[1]) { }
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
+
+
+            end;
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        DateFilter: Text;
+        AmountInWords: array[2] of Text[80];
+        ObjCheck: Report "Check Translation Management";
+
+}
+
+report 91009 "Cash Withdrawal "
+{
+    UsageCategory = ReportsAndAnalysis;
+    ApplicationArea = All;
+    DefaultLayout = RDLC;
+    RDLCLayout = '.\Loan Management\Credit Reports\Cash Withdrawal Slip.rdl';
+    dataset
+    {
+        dataitem("Teller Transactions"; "Teller Transactions")
+        {
+            column(Document_No; "Document No") { }
+
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(Transaction_Type; "Transaction Type") { }
+            column(Member_No; "Member No") { }
+            column(Member_Name; "Member Name") { }
+            column(Account_No; "Account No") { }
+            column(Account_Name; "Account Name") { }
+            column(Amount; Amount) { }
+            column(Teller; Teller) { }
+            column(Till; Till) { }
+            column(Created_On; "Created On") { }
+            column(Posting_Date; "Posting Date") { }
+            column(Created_By; "Created By") { }
+            column(AmountInWords; AmountInWords[1]) { }
+            column(Charge_Code; "Charge Code") { }
+            column(ChargeAount; ChargeAount) { }
+
+            trigger OnAfterGetRecord()
+            begin
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
+
+                ChargeAount := 0;
+                ObjCalcSchemes.reset;
+                //ObjCalcSchemes.SetRange("Transaction Code","Charge Code");
+                ObjCalcSchemes.SetRange("Charge Code", "Charge Code");
+                if ObjCalcSchemes.FindSet() then begin
+                    if ((Amount >= ObjCalcSchemes."Lower Limit") and (Amount <= ObjCalcSchemes."Upper Limit")) then
+                        repeat
+                            ChargeAount += ObjCalcSchemes.Rate;
+                        until ObjCalcSchemes.next = 0;
+
+                end;
+            end;
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+                action(ActionName)
+                {
+                    ApplicationArea = All;
+
+                }
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        DateFilter: Text;
+        AmountInWords: array[2] of Text[80];
+        ObjCheck: Report "Check Translation Management";
+        ChargeAount: Decimal;
+        ObjCharges: Record "Transaction Charges";
+        ObjCalcSchemes: Record "Transaction Calc. Scheme";
+
+
+}
+//O4FPahuip1dm8SDKxVLv

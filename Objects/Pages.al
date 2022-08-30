@@ -99,6 +99,7 @@ page 90001 "Member Categories"
 
                 }
                 field(Description; Rec.Description) { }
+                field("No. Series"; "No. Series") { }
                 field("Is Group"; Rec."Is Group") { }
             }
         }
@@ -5107,18 +5108,25 @@ page 90052 "Member Editing"
     begin
         isOpen := (Rec."Approval Status" = Rec."Approval Status"::New);
         isGroupMember := rec."Is Group";
+        MemberManagement.GetBcrqSetup(UserId, GlobalEditor, PartialEditor, CanRejoin, MPOAEditor);
     end;
 
     trigger OnAfterGetRecord()
     begin
         isOpen := (Rec."Approval Status" = Rec."Approval Status"::New);
         isGroupMember := rec."Is Group";
+        MemberManagement.GetBcrqSetup(UserId, GlobalEditor, PartialEditor, CanRejoin, MPOAEditor);
+    end;
+
+    trigger OnInit()
+    begin
+        MemberManagement.GetBcrqSetup(UserId, GlobalEditor, PartialEditor, CanRejoin, MPOAEditor);
     end;
 
     var
         MemberManagement: Codeunit "Member Management";
         ApprovalsMgmtExt: Codeunit "Approval Mgmt. Ext";
-        isOpen, isGroupMember : boolean;
+        isOpen, isGroupMember, GlobalEditor, PartialEditor, CanRejoin, MPOAEditor : boolean;
 }
 page 90053 "Payment Vouchers"
 {
@@ -8956,6 +8964,9 @@ page 90108 "ATM Types Card"
             {
                 group("General Transactions Setup")
                 {
+                    field("Withdrawal T. Code (Coop)"; "Withdrawal T. Code (Coop)") { }
+                    field("Withdrawal T. Code (VISA)"; "Withdrawal T. Code (VISA)") { }
+                    field("Branch Withdrawal T. Code"; "Branch Withdrawal T. Code") { }
                     field("Activation T. Code"; Rec."Activation T. Code") { }
                     field("Airtime Purchase T. Code"; Rec."Airtime Purchase T. Code") { }
                     field("Blocking T. Code"; Rec."Blocking T. Code") { }
@@ -8963,6 +8974,12 @@ page 90108 "ATM Types Card"
                     field("MPesa Withdrawal T. Code"; Rec."MPesa Withdrawal T. Code") { }
                     field("Pin Change T. Code"; Rec."Pin Change T. Code") { }
                     field("Replacement T. Code"; Rec."Replacement T. Code") { }
+                    field("KPLC Utility (COOP)"; "KPLC Utility (COOP)") { }
+                    field("KPLC Utility (VISA)"; "KPLC Utility (VISA)") { }
+                    field("Safaricom Utility (COOP)"; "Safaricom Utility (COOP)") { }
+                    field("Safaricom Utility (VISA)"; "Safaricom Utility (VISA)") { }
+                    field("Card-to-Card T. Code"; "Card-to-Card T. Code") { }
+                    field("Online Payment T. Code"; "Online Payment T. Code") { }
                 }
                 group("POS Transaction Charges")
                 {
@@ -19456,6 +19473,8 @@ page 90258 "Checkoff Variation Lines"
                 field("Current Contribution"; "Current Contribution") { }
                 field("New Contribution"; "New Contribution") { }
                 field(Modified; Modified) { }
+                field("Loan Account"; "Loan Account") { }
+                field("Application No."; "Application No.") { }
             }
         }
     }
@@ -19610,6 +19629,8 @@ page 90261 "Checkoff Advice"
                 field("Advice Type"; "Advice Type") { }
                 field("Amount Off"; "Amount Off") { }
                 field("Amount On"; "Amount On") { }
+                field("Current Balance"; "Current Balance") { }
+                field("Loan No"; "Loan No") { Editable = false; Caption = 'Loan Account.'; }
             }
         }
         area(Factboxes)
@@ -23107,6 +23128,47 @@ page 90312 "SMS Ledger"
                 field("SMS Message"; "SMS Message") { }
                 field("Created By"; "Created By") { }
                 field("Sent On"; "Sent On") { }
+            }
+        }
+        area(Factboxes)
+        {
+
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(ActionName)
+            {
+                ApplicationArea = All;
+
+                trigger OnAction();
+                begin
+
+                end;
+            }
+        }
+    }
+}
+page 90313 "BCRQ Setup"
+{
+    PageType = List;
+    ApplicationArea = All;
+    UsageCategory = Lists;
+    SourceTable = "BCRQ Setup";
+
+    layout
+    {
+        area(Content)
+        {
+            repeater(GroupName)
+            {
+                field("Global Editor"; "Global Editor") { }
+                field("Partial Member Update"; "Partial Member Update") { }
+                field("Can Rejoin Member"; "Can Rejoin Member") { }
+                field("MPOA Update"; "MPOA Update") { }
             }
         }
         area(Factboxes)

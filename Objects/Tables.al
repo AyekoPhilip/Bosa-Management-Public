@@ -656,6 +656,10 @@ table 90002 "Member Categories"
 
         }
         field(3; "Is Group"; Boolean) { }
+        field(4; "No. Series"; Code[20])
+        {
+            TableRelation = "No. Series";
+        }
     }
 
     keys
@@ -1062,6 +1066,42 @@ table 90005 "Employer Codes"
             TableRelation = Customer;
         }
         field(9; SelfEmployment; Boolean) { }
+        field(30; "No. Of Dormant Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Dormant)));
+            Editable = false;
+        }
+        field(40; "No. Of Deceased Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Desceased)));
+            Editable = false;
+        }
+        field(50; "No. Of Withdrawn Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter(Withdrawn)));
+            Editable = false;
+        }
+        field(60; "No. Of Reinstated Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter("Re-Instated")));
+            Editable = false;
+        }
+        field(70; "No. Of Rejoined Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter("Re-Instated")));
+            Editable = false;
+        }
+        field(80; Blocked; Boolean)
+        {
+            DataClassification = ToBeClassified;
+            Editable = false;
+            Description = 'If an employer ceases to provide services for the sacco.';
+        }
     }
 
 
@@ -1486,11 +1526,15 @@ table 90008 "Members"
             CalcFormula = sum("Uncleared Effects".Amount where("Member No" = field("Member No.")));
             Editable = false;
         }
-        field(60; "Member Status"; Option)
+        field(60; "Member Status"; Enum "Member Status")
+        {
+            Editable = false;
+        }
+        /*field(60; "Member Status"; Option)
         {
             OptionMembers = Active,Defaulter,"Withdrawal-Pending",Withdrawn,Desceased;
             Editable = false;
-        }
+        }*/
         field(61; "Account Filter"; Code[20])
         {
             TableRelation = Vendor where("Member No." = field("Member No."));
@@ -7584,6 +7628,34 @@ table 90058 "ATM Types"
         {
             tablerelation = "SACCO Transaction Types";
         }
+        field(33; "Branch Withdrawal T. Code"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        field(34; "KPLC Utility (COOP)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        field(35; "Safaricom Utility (COOP)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        field(36; "Card-to-Card T. Code"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        field(37; "Online Payment T. Code"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        field(38; "Safaricom Utility (VISA)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
+        field(39; "KPLC Utility (VISA)"; Code[20])
+        {
+            tablerelation = "SACCO Transaction Types";
+        }
     }
 
     keys
@@ -11987,6 +12059,7 @@ table 90111 "Checkoff Variation Header"
         LoanApplication.SetFilter("Loan Balance", '>0');
         LoanApplication.SetRange("Member No.", "Member No");
         if LoanApplication.FindSet() then begin
+            LoanApplication.CalcFields("Loan Balance");//Fred
             repeat
                 CheckoffVariationLines.Init();
                 CheckoffVariationLines."Document No" := "Document No";
@@ -12000,7 +12073,11 @@ table 90111 "Checkoff Variation Header"
                         CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Inistallment"
                     else
                         CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Principle";
-                CheckoffVariationLines.Insert();
+                CheckoffVariationLines."Account Balance" := LoanApplication."Loan Balance";//Fred
+                CheckoffVariationLines."Application No." := LoanApplication."Application No";//Fred
+                CheckoffVariationLines."Loan Account" := LoanApplication."Loan Account";//Fred
+                CheckoffVariationLines.Insert(true);
+            // CheckoffVariationLines.Modify();
             until LoanApplication.Next() = 0;
         end;
         Subscriptions.Reset();
@@ -12102,6 +12179,8 @@ table 90112 "Checkoff Variation Lines"
             trigger OnValidate()
             var
                 ProductFactory: Record "Product Factory";
+                ObjSaccoSetup: Record "Sacco Setup";
+                DepositErrMsg: TextConst ENU = 'You cannot enter new contibution less than the minimum allowable deposits %1';
             begin
                 if ProductFactory.Get("Acount Code") then begin
                     if ProductFactory."Product Type" = ProductFactory."Product Type"::"Loan Account" then begin
@@ -12109,11 +12188,36 @@ table 90112 "Checkoff Variation Lines"
                             Error('You Cannot Reduce the current contribution');
                     end;
                 end;
+                //Limit users to enter only New Contribution >=3000 if Deposits
+                ObjSaccoSetup.get();
+                if ProductFactory.Get('S03') then begin
+                    if "New Contribution" < ObjSaccoSetup."Minimum Deposit Cont." then
+                        Error(DepositErrMsg, ObjSaccoSetup."Minimum Deposit Cont.");
+                end;
             end;
         }
         field(6; "Account Balance"; Decimal) { }
         field(7; Modified; Boolean)
         {
+            Editable = false;
+        }
+        field(30; "Member No."; Code[50])
+        {
+            // DataClassification = ToBeClassified;
+            FieldClass = FlowField;
+            CalcFormula = lookup("Checkoff Variation Header"."Member No" where("Document No" = field("Document No")));
+            Editable = false;
+        }
+        field(40; "Application No."; Code[50])
+        {
+            DataClassification = ToBeClassified;
+            TableRelation = "Loan Application"."Application No" where(Posted = const(true), "Member No." = field("Member No."));
+            Editable = false;
+        }
+        field(50; "Loan Account"; Code[50])
+        {
+            DataClassification = ToBeClassified;
+            TableRelation = "Loan Application"."Loan Account" where(Posted = const(true), "Member No." = field("Member No."));
             Editable = false;
         }
     }
@@ -12187,6 +12291,11 @@ table 90113 "Checkoff Advice"
             Editable = false;
             FieldClass = FlowField;
             CalcFormula = lookup(Members."Full Name" where("Member No." = field("Member No")));
+        }
+        field(30; "Loan Application No."; Code[50])
+        {
+            DataClassification = ToBeClassified;
+            Editable = false;
         }
     }
 
@@ -13652,71 +13761,82 @@ table 90128 "SMS Ledger"
     end;
 
 }
-/*
-table 90129 "Non Members"
+table 90129 "BCRQ Setup"
 {
     DataClassification = ToBeClassified;
-    
+
     fields
     {
-        field(1;"National ID No"; Integer)
+        field(1; "User ID"; Code[100]) { }
+        field(2; "Partial Member Update"; Boolean)
         {
-            DataClassification = ToBeClassified;
-            
-        }
-        field(2;"First Name";Text[50]){
-            trigger OnValidate() begin
-                Validate("Full Name");
+            trigger OnValidate()
+            begin
+                if "Partial Member Update" then begin
+                    "MPOA Update" := false;
+                    "Can Rejoin Member" := false;
+                    "Global Editor" := false;
+                end;
             end;
         }
-        field(3;"Middle Name";Text[50]){
-            trigger OnValidate() begin
-                Validate("Full Name");
+        field(3; "MPOA Update"; Boolean)
+        {
+            trigger OnValidate()
+            begin
+                "Partial Member Update" := false;
+                "Can Rejoin Member" := false;
+                "Global Editor" := false;
             end;
         }
-        field(4;"Last Name";Text[50]){
-            trigger OnValidate() begin
-                Validate("Full Name");
+        field(4; "Can Rejoin Member"; Boolean)
+        {
+            trigger OnValidate()
+            begin
+                "MPOA Update" := false;
+                "Partial Member Update" := false;
+                "Global Editor" := false;
             end;
         }
-        field(5;"Full Name";Text[50]){
-            Editable = false;
-            trigger OnValidate() begin
-                "Full Name" := "First Name"+' '+"Middle Name"+' '+"Last Name";
-            end;            
+        field(5; "Global Editor"; Boolean)
+        {
+            trigger OnValidate()
+            begin
+                "MPOA Update" := false;
+                "Can Rejoin Member" := false;
+                "Partial Member Update" := false;
+            end;
         }
     }
-    
+
     keys
     {
-        key(Key1; MyField)
+        key(Key1; "User ID")
         {
             Clustered = true;
         }
     }
-    
+
     var
         myInt: Integer;
-    
+
     trigger OnInsert()
     begin
-        
+
     end;
-    
+
     trigger OnModify()
     begin
-        
+
     end;
-    
+
     trigger OnDelete()
     begin
-        
+
     end;
-    
+
     trigger OnRename()
     begin
-        
+
     end;
-    
+
 }
-*/

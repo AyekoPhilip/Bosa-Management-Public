@@ -5,6 +5,17 @@ codeunit 90001 "Member Management"
 
     end;
 
+    procedure GetBcrqSetup(UserCode: Code[100]; var GlobalEditor: Boolean; var PartialEditor: Boolean; var CanRejoin: Boolean; var MPOAEditor: Boolean)
+    var
+        BCRQSetup: Record "BCRQ Setup";
+    begin
+        BCRQSetup.Get(UserCode);
+        GlobalEditor := BCRQSetup."Global Editor";
+        PartialEditor := BCRQSetup."Partial Member Update";
+        CanRejoin := BCRQSetup."Can Rejoin Member";
+        MPOAEditor := BCRQSetup."MPOA Update";
+    end;
+
     internal procedure DrillDownPage(MemberNo: Code[20]; AsAtDate: Date)
     var
         VendorLedger: Page "Vendor Ledger Entries";
@@ -1015,19 +1026,24 @@ codeunit 90001 "Member Management"
         Kins2: Record "Nexts of Kin";
         SaccoSetup: Record "Sacco Setup";
         NoSeries: Codeunit NoSeriesManagement;
-        MemberNo: code[20];
+        MemberNo, NoSeriesCode : code[20];
         ProductSetup: Record "Product Factory";
         AccountNo: code[20];
         Signatories, Signatories1 : Record "Group & Company Members";
+        MemberCategories: Record "Member Categories";
     begin
         onBeforeCreateMember(MemberApplication);
         MemberNo := '';
         MemberNo := MemberApplication."Member No.";
+        MemberCategories.Get(MemberApplication."Member Category");
         SaccoSetup.get;
-        SaccoSetup.TestField("Member Nos.");
+        if MemberCategories."No. Series" = '' then begin
+            SaccoSetup.TestField("Member Nos.");
+            NoSeriesCode := SaccoSetup."Member Nos.";
+        end else
+            NoSeriesCode := MemberCategories."No. Series";
         if MemberNo = '' then
-            MemberNo := NoSeries.GetNextNo(SaccoSetup."Member Nos.", Today, true);
-
+            MemberNo := NoSeries.GetNextNo(NoSeriesCode, Today, true);
         Member.init;
         Member."Member No." := MemberNo;
         Member."First Name" := MemberApplication."First Name";
@@ -2248,6 +2264,11 @@ codeunit 90002 "Loans Management"
                 CheckOffAdvice."Product Name" := VariationLines.Description;
                 CheckOffAdvice."Advice Type" := CheckOffAdvice."Advice Type"::Adjustment;
                 CheckOffAdvice."Advice Date" := VariationHeader."Effective Date";
+                CheckOffAdvice."Loan No" := VariationLines."Loan Account";
+                if LoanApplication.Get(VariationLines."Application No.") then begin
+                    LoanApplication.CalcFields("Loan Balance");
+                    CheckOffAdvice."Current Balance" := LoanApplication."Loan Balance";
+                end;
                 CheckOffAdvice.Insert();
                 if LoanApplication.get(VariationLines."Acount Code") then begin
                     LoanApplication.Rescheduled := true;
@@ -5698,8 +5719,21 @@ codeunit 90004 ThirdPartyIntegrations
         Member: Record Members;
         Vendor: Record Vendor;
         ATMLedger: Record "ATM Ledger";
+        EntryNo:Integer;
     begin
-
+        EntryNo:=1;
+        Vendor.Reset();
+        Vendor.SetFilter("Card No", '<>%1', '');
+        Vendor.SetRange("Member No.", MemberNo);
+        if Vendor.FindSet() then begin
+            repeat
+                Vendor."Card No" := '';
+                Vendor.Modify(True);
+                ATMLedger.Reset();
+                if ATMLedger.Findlast then
+                EntryNo:=ATMLedger."Entry No"+1;                
+            until Vendor.Next() = 0;
+        end;
         ResponseCode := '00';
         ResponseMessage.addText('{"Message":"ATM Card Blocked Successfully"}')
     end;
@@ -7265,6 +7299,7 @@ codeunit 90004 ThirdPartyIntegrations
                                 CheckOffLines.SetRange("Member No", Member."Member No.");
                                 CheckOffLines.SetFilter("Posting Date", DateFilter);
                                 CheckOffLines.SetRange("Upload Type", CheckOffLines."Upload Type"::Salary);
+                                CheckOffLines.SetFilter("Document No", 'JUN-2022|MAY-2022|JUL-2022');
                                 CheckOffLines.SetRange(Posted, true);
                                 if CheckOffLines.FindSet() then begin
                                     PrevDocNo := 'PREV';
@@ -11199,23 +11234,25 @@ codeunit 90009 "Notifications Management"
         EntryNo: Integer;
     begin
         PhoneNo := '0729143665';
-        SaccoSetup.Get();
-        if SaccoSetup."Block SMS" = false then
-            SendSMSV2(PhoneNo, SmsMessage);
-        //HtClient.Post(Text001 + Text002 + SmsMessage + Text003 + PhoneNo, content, Response);
-        SMSLedger.Reset;
-        if SMSLedger.findlast then
-            EntryNo := SMSLedger."Entry No" + 1
-        else
-            EntryNo := 1;
-        SMSLedger.Init;
-        SMSLedger."Entry No" := EntryNo;
-        SMSLedger."Phone No" := PhoneNo;
-        SMSLedger."SMS Message" := SmsMessage;
-        SMSLedger."Created By" := UserID;
-        SMSLedger."Sent On" := CurrentDateTime;
-        SMSLedger."SMS Source" := SMSSource;
-        SMSLedger.Insert;
+        if SMSSource <> '' then begin
+            SaccoSetup.Get();
+            if SaccoSetup."Block SMS" = false then
+                SendSMSV2(PhoneNo, SmsMessage);
+            //HtClient.Post(Text001 + Text002 + SmsMessage + Text003 + PhoneNo, content, Response);
+            SMSLedger.Reset;
+            if SMSLedger.findlast then
+                EntryNo := SMSLedger."Entry No" + 1
+            else
+                EntryNo := 1;
+            SMSLedger.Init;
+            SMSLedger."Entry No" := EntryNo;
+            SMSLedger."Phone No" := PhoneNo;
+            SMSLedger."SMS Message" := SmsMessage;
+            SMSLedger."Created By" := UserID;
+            SMSLedger."Sent On" := CurrentDateTime;
+            SMSLedger."SMS Source" := SMSSource;
+            SMSLedger.Insert;
+        end;
     end;
 
     procedure CheckSMSBalance()
@@ -17281,7 +17318,7 @@ codeunit 90020 "Scheduled Activities"
     var
         MobiLoanReminder: Report "Send Mobi Loans Reminder - Q";
     begin
-        MobiLoanReminder.Run();
+        //MobiLoanReminder.Run();
     end;
 
     procedure updateGLEntry()
