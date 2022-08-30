@@ -11,6 +11,52 @@
       <rd:DataSourceID>93d1dbb7-c51c-4f31-9043-6c5fdc4b7dde</rd:DataSourceID>
     </DataSource>
   </DataSources>
+  <DataSets>
+    <DataSet Name="DataSet_Result">
+      <Query>
+        <DataSourceName>DataSource</DataSourceName>
+        <CommandText />
+      </Query>
+      <Fields>
+        <Field Name="Code">
+          <DataField>Code</DataField>
+        </Field>
+        <Field Name="Name">
+          <DataField>Name</DataField>
+        </Field>
+        <Field Name="NoOfActiveMembers">
+          <DataField>NoOfActiveMembers</DataField>
+        </Field>
+        <Field Name="NoOfDormantMembers">
+          <DataField>NoOfDormantMembers</DataField>
+        </Field>
+        <Field Name="NoOfWithdrawnMembers">
+          <DataField>NoOfWithdrawnMembers</DataField>
+        </Field>
+        <Field Name="NoOfDeceasedMembers">
+          <DataField>NoOfDeceasedMembers</DataField>
+        </Field>
+        <Field Name="CompanyLogo">
+          <DataField>CompanyLogo</DataField>
+        </Field>
+        <Field Name="CompanyName">
+          <DataField>CompanyName</DataField>
+        </Field>
+        <Field Name="CompanyAddress1">
+          <DataField>CompanyAddress1</DataField>
+        </Field>
+        <Field Name="CompanyAddress2">
+          <DataField>CompanyAddress2</DataField>
+        </Field>
+        <Field Name="CompanyPhone">
+          <DataField>CompanyPhone</DataField>
+        </Field>
+        <Field Name="CompanyEmail">
+          <DataField>CompanyEmail</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
   <ReportSections>
     <ReportSection>
       <Body>
@@ -415,7 +461,7 @@
         <Height>2.0955cm</Height>
         <Style />
       </Body>
-      <Width>24.27816cm</Width>
+      <Width>20.42583cm</Width>
       <Page>
         <PageHeader>
           <Height>4.15218cm</Height>
@@ -429,6 +475,7 @@
                   <Value>=First(Fields!CompanyLogo.Value, "DataSet_Result")</Value>
                   <MIMEType>image/jpeg</MIMEType>
                   <Sizing>FitProportional</Sizing>
+                  <Top>0.00833in</Top>
                   <Left>0.00833in</Left>
                   <Height>1.1875in</Height>
                   <Width>1.42708in</Width>
@@ -557,6 +604,7 @@
                     </Paragraph>
                   </Paragraphs>
                   <rd:DefaultName>Textbox1</rd:DefaultName>
+                  <Top>0.00833in</Top>
                   <Left>1.46319in</Left>
                   <Height>1.1875in</Height>
                   <Width>3.95833in</Width>
@@ -634,7 +682,8 @@
                     </Paragraph>
                   </Paragraphs>
                   <rd:DefaultName>Textbox4</rd:DefaultName>
-                  <Left>7.12499in</Left>
+                  <Top>0.00833in</Top>
+                  <Left>5.49999in</Left>
                   <Height>0.59375in</Height>
                   <Width>2.16667in</Width>
                   <ZIndex>2</ZIndex>
@@ -650,9 +699,10 @@
                 </Textbox>
               </ReportItems>
               <KeepTogether>true</KeepTogether>
+              <Top>0.00833in</Top>
               <Left>0.13334in</Left>
-              <Height>1.1875in</Height>
-              <Width>9.29166in</Width>
+              <Height>1.19583in</Height>
+              <Width>7.78792in</Width>
               <Style>
                 <Border>
                   <Style>Solid</Style>
@@ -678,7 +728,7 @@
                   </Style>
                 </Paragraph>
               </Paragraphs>
-              <Top>1.25694in</Top>
+              <Top>1.26527in</Top>
               <Left>2.41063in</Left>
               <Height>22.4pt</Height>
               <Width>9.91253cm</Width>
@@ -695,9 +745,46 @@
           </Style>
         </PageHeader>
         <PageFooter>
-          <Height>1.7145cm</Height>
+          <Height>1.4605cm</Height>
           <PrintOnFirstPage>true</PrintOnFirstPage>
           <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="Textbox1">
+              <CanGrow>true</CanGrow>
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>Huduma Maradufu</Value>
+                      <Style>
+                        <FontStyle>Italic</FontStyle>
+                        <FontFamily>Candara Light</FontFamily>
+                        <FontWeight>Bold</FontWeight>
+                      </Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Center</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <rd:DefaultName>Textbox1</rd:DefaultName>
+              <Top>0.30552cm</Top>
+              <Left>5.2197cm</Left>
+              <Height>0.6cm</Height>
+              <Width>10.22583cm</Width>
+              <Style>
+                <Border>
+                  <Style>None</Style>
+                </Border>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
           <Style>
             <Border>
               <Style>None</Style>
@@ -715,6 +802,12 @@
       </Page>
     </ReportSection>
   </ReportSections>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
   <Code>Public Function BlankZero(ByVal Value As Decimal)
     if Value = 0 then
         Return ""
@@ -754,50 +847,4 @@ End Function
   <ConsumeContainerWhitespace>true</ConsumeContainerWhitespace>
   <rd:ReportUnitType>Cm</rd:ReportUnitType>
   <rd:ReportID>0eeb6585-38ae-40f1-885b-8d50088d51b4</rd:ReportID>
-  <DataSets>
-    <DataSet Name="DataSet_Result">
-      <Fields>
-        <Field Name="Code">
-          <DataField>Code</DataField>
-        </Field>
-        <Field Name="Name">
-          <DataField>Name</DataField>
-        </Field>
-        <Field Name="NoOfActiveMembers">
-          <DataField>NoOfActiveMembers</DataField>
-        </Field>
-        <Field Name="NoOfDormantMembers">
-          <DataField>NoOfDormantMembers</DataField>
-        </Field>
-        <Field Name="NoOfWithdrawnMembers">
-          <DataField>NoOfWithdrawnMembers</DataField>
-        </Field>
-        <Field Name="NoOfDeceasedMembers">
-          <DataField>NoOfDeceasedMembers</DataField>
-        </Field>
-        <Field Name="CompanyLogo">
-          <DataField>CompanyLogo</DataField>
-        </Field>
-        <Field Name="CompanyName">
-          <DataField>CompanyName</DataField>
-        </Field>
-        <Field Name="CompanyAddress1">
-          <DataField>CompanyAddress1</DataField>
-        </Field>
-        <Field Name="CompanyAddress2">
-          <DataField>CompanyAddress2</DataField>
-        </Field>
-        <Field Name="CompanyPhone">
-          <DataField>CompanyPhone</DataField>
-        </Field>
-        <Field Name="CompanyEmail">
-          <DataField>CompanyEmail</DataField>
-        </Field>
-      </Fields>
-      <Query>
-        <DataSourceName>DataSource</DataSourceName>
-        <CommandText />
-      </Query>
-    </DataSet>
-  </DataSets>
 </Report>

@@ -60,7 +60,7 @@ enum 90002 "Repayment Frequency"
 
 enum 90003 "Approval Status Custom"
 {
-    Extensible = false;
+    Extensible = true;
 
     value(0; "New")
     {
@@ -75,7 +75,7 @@ enum 90003 "Approval Status Custom"
 
 enum 90004 "Prouct Source"
 {
-    Extensible = false;
+    Extensible = true;
 
     value(0; BOSA)
     {

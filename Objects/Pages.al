@@ -8544,6 +8544,29 @@ page 90100 "Teller Transaction Card"
                     FOSATrans.PostTellerTransaction(Rec);
                 end;
             }
+
+            //Fred
+            action("Re-Print Receipt")
+            {
+                Image = Print;
+                Promoted = true;
+                PromotedCategory = Process;
+                trigger OnAction()
+                var
+
+                begin
+                    reset;
+                    SetRange("Document No", "Document No");
+                    if FindSet() then begin
+                        if rec."Transaction Type" = rec."Transaction Type"::"Cash Deposit" then
+                            report.Run(91007, true, false, rec)
+                        else
+                            if rec."Transaction Type" = rec."Transaction Type"::"Cash Withdrawal" then
+                                report.Run(91008, true, false, rec)
+
+                    end;
+                end;
+            }
         }
     }
 

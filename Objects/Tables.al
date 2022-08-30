@@ -11902,7 +11902,6 @@ table 90111 "Checkoff Variation Header"
                 if Members.Get("Member No") then
                     "Member Name" := Members."Full Name";
                 PopulateCurrentSubscriptions();
-                //FnPopulateSubscriptionsBasedOnThePreviousCheckoffAdvise();
 
             end;
         }
@@ -12032,17 +12031,7 @@ table 90111 "Checkoff Variation Header"
         CheckoffLine: Record "Checkoff Variation Lines";
         ObjCheckoffLine: Record "Checkoff Variation Lines";
     begin
-        //CheckoffLine.CalcFields("Member No.");
-        // CheckoffLine.reset();
-        // CheckoffLine.SetRange(CheckoffLine."Member No.", "Member No");
-        // if CheckoffLine.FindLast() then begin
-        //     repeat
-        //         ObjCheckoffLine.Init();
-        //         ObjCheckoffLine.TransferFields(CheckoffLine, false);
-        //         ObjCheckoffLine."Document No" := "Document No";
-        //         ObjCheckoffLine.insert(true);
-        //     until CheckoffLine.next = 0;
-        // end else begin
+
         PopulateCurrentSubscriptions();
     end;
 
@@ -12101,6 +12090,9 @@ table 90112 "Checkoff Variation Lines"
             trigger OnValidate()
             var
                 ProductFactory: Record "Product Factory";
+                ObjSaccoSetup: Record "Sacco Setup";
+                DepositErrMsg: TextConst ENU = 'You cannot enter new contibution less than the minimum allowable deposits %1';
+
             begin
                 if ProductFactory.Get("Acount Code") then begin
                     if ProductFactory."Product Type" = ProductFactory."Product Type"::"Loan Account" then begin
@@ -12108,7 +12100,16 @@ table 90112 "Checkoff Variation Lines"
                             Error('You Cannot Reduce the current contribution');
                     end;
                 end;
+
+                //Limit users to enter only New Contribution >=3000 if Deposits
+                ObjSaccoSetup.get();
+                if ProductFactory.Code = 'S03' then begin
+                    if "New Contribution" < ObjSaccoSetup."Minimum Deposit Cont." then begin
+                        Error(DepositErrMsg, Format(ObjSaccoSetup."Minimum Deposit Cont."));
+                    end;
+                end;
             end;
+
         }
         field(6; "Account Balance"; Decimal) { Editable = false; }
 

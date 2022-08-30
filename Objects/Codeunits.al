@@ -16545,3 +16545,5 @@ codeunit 90021 "Credit Email Management"
 
         Subject, Body, Receipient : Text;
 }
+
+//

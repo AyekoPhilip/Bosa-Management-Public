@@ -12,10 +12,10 @@
             "serverInstance": "BC180",    
             "authentication": "UserPassword",*/
             //Ushuru Server - UAT                     
-            "server": "http://192.168.0.116",
+            "server": "http://localhost",
             "port": 9049,      
             "serverInstance": "BC180",    
-            "authentication": "UserPassword",
+            "authentication": "Windows",
             //**** ITL Server
             /*"server": "http://185.213.27.138",
             "port": 7049,
