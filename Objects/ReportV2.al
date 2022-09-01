@@ -713,7 +713,7 @@ report 91007 "Collateral Register"
 
 }
 //Fred
-report 91008 "Cash With_Deposit Receipt "
+report 91008 "Cash Deposit Receipt "
 {
     UsageCategory = ReportsAndAnalysis;
     ApplicationArea = All;
@@ -748,7 +748,7 @@ report 91008 "Cash With_Deposit Receipt "
             begin
                 CompanyInformation.get;
                 CompanyInformation.CalcFields(Picture);
-                ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
+                // ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
 
 
             end;
@@ -785,7 +785,7 @@ report 91008 "Cash With_Deposit Receipt "
         CompanyInformation: Record "Company Information";
         DateFilter: Text;
         AmountInWords: array[2] of Text[80];
-        ObjCheck: Report "Check Translation Management";
+    // ObjCheck: Report "Check Translation Management";
 
 }
 
@@ -826,7 +826,7 @@ report 91009 "Cash Withdrawal "
             begin
                 CompanyInformation.get;
                 CompanyInformation.CalcFields(Picture);
-                ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
+                // ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
 
                 ChargeAount := 0;
                 ObjCalcSchemes.reset;
@@ -873,7 +873,7 @@ report 91009 "Cash Withdrawal "
         CompanyInformation: Record "Company Information";
         DateFilter: Text;
         AmountInWords: array[2] of Text[80];
-        ObjCheck: Report "Check Translation Management";
+        // ObjCheck: Report "Check Translation Management";
         ChargeAount: Decimal;
         ObjCharges: Record "Transaction Charges";
         ObjCalcSchemes: Record "Transaction Calc. Scheme";

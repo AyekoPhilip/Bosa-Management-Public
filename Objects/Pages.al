@@ -8589,6 +8589,18 @@ page 90100 "Teller Transaction Card"
                     if not confirm('Do you want to Post?') then
                         currpage.Close();
                     FOSATrans.PostTellerTransaction(Rec);
+                    if rec."Transaction Type" = rec."Transaction Type"::"Cash Deposit" then begin
+                        reset;
+                        SetRange("Document No", "Document No");
+                        if findset then
+                            Report.Run(91008, false, false, rec);
+                    end else
+                        if rec."Transaction Type" = rec."Transaction Type"::"Cash Withdrawal" then begin
+                            reset;
+                            SetRange("Document No", "Document No");
+                            if findset then
+                                Report.Run(91009, false, false, rec);
+                        end;
                 end;
             }
         }
@@ -20387,7 +20399,41 @@ page 90272 "Teller Transaction Card(RO)"
                 begin
 
                 end;
+
+
             }
+
+            //Reprint Receipt
+            action("Reprint Slip")
+            {
+                ApplicationArea = All;
+                Promoted = true;
+                Image = StepInto;
+                PromotedCategory = Process;
+
+                trigger OnAction()
+                begin
+                    if rec."Transaction Type" = rec."Transaction Type"::"Cash Deposit" then begin
+                        reset;
+                        SetRange("Document No", "Document No");
+                        if findset then
+                            Report.Run(91008, true, false, rec);
+                    end else
+                        if rec."Transaction Type" = rec."Transaction Type"::"Cash Withdrawal" then begin
+                            reset;
+                            SetRange("Document No", "Document No");
+                            if findset then
+                                Report.Run(91009, true, false, rec);
+                        end;
+                end;
+
+
+
+
+            }
+
+
+
         }
     }
 
