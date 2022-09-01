@@ -36,7 +36,9 @@ enum 90001 "Member Status"
     {
     }
     value(5; Dormant) { }
+
     value(6; "Re-Instated") { }
+
     value(7; "Non-Active") { }
 }
 
