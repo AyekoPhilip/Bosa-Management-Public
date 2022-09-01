@@ -70,6 +70,18 @@ End Function
         <Field Name="Name">
           <DataField>Name</DataField>
         </Field>
+        <Field Name="NoOfActiveMembers">
+          <DataField>NoOfActiveMembers</DataField>
+        </Field>
+        <Field Name="NoOfDormantMembers">
+          <DataField>NoOfDormantMembers</DataField>
+        </Field>
+        <Field Name="NoOfWithdrawnMembers">
+          <DataField>NoOfWithdrawnMembers</DataField>
+        </Field>
+        <Field Name="NoOfDeceasedMembers">
+          <DataField>NoOfDeceasedMembers</DataField>
+        </Field>
         <Field Name="CompanyLogo">
           <DataField>CompanyLogo</DataField>
         </Field>
