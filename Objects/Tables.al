@@ -1096,6 +1096,13 @@ table 90005 "Employer Codes"
             CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter("Re-Instated")));
             Editable = false;
         }
+
+        field(90; "No. Of Active Members"; Integer)
+        {
+            FieldClass = FlowField;
+            CalcFormula = count(Members where("Employer Code" = field(Code), "Member Status" = filter("Re-Instated")));
+            Editable = false;
+        }
         field(80; Blocked; Boolean)
         {
             DataClassification = ToBeClassified;

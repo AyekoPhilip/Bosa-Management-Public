@@ -417,19 +417,19 @@ report 91005 "Membership Statistics"
         dataitem(Employer_Codes; "Employer Codes")
         {
             RequestFilterFields = Code;
-            //DataItemTableView = where(Blocked = const(false));
+            DataItemTableView = where(Blocked = const(false));
 
             column(Code; "Code") { }
 
             column(Name; Name) { }
 
-            //column(NoOfActiveMembers; "No. Of Active Members") { }
+            column(NoOfActiveMembers; "No. Of Active Members") { }
 
-            //column(NoOfDormantMembers; "No. Of Dormant Members") { }
+            column(NoOfDormantMembers; "No. Of Dormant Members") { }
 
-            //column(NoOfWithdrawnMembers; "No. Of Withdrawn Members") { }
+            column(NoOfWithdrawnMembers; "No. Of Withdrawn Members") { }
 
-            //column(NoOfDeceasedMembers; "No. Of Deceased Members") { }
+            column(NoOfDeceasedMembers; "No. Of Deceased Members") { }
 
             column("CompanyLogo"; CompanyInformation.Picture) { }
             column("CompanyName"; CompanyInformation.Name) { }
@@ -747,10 +747,15 @@ report 91008 "Cash Deposit Receipt "
             trigger OnAfterGetRecord()
             begin
                 CompanyInformation.get;
+                ObjGLLedgerSet.get();
                 CompanyInformation.CalcFields(Picture);
+<<<<<<< HEAD
                 // ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
 
 
+=======
+                ObjCheck.FormatNoText(AmountInWords, Amount, ObjGLLedgerSet."LCY Code");
+>>>>>>> 4399eb57747677e662f31820fe72e4f35c86a95b
             end;
         }
     }
@@ -785,7 +790,12 @@ report 91008 "Cash Deposit Receipt "
         CompanyInformation: Record "Company Information";
         DateFilter: Text;
         AmountInWords: array[2] of Text[80];
+<<<<<<< HEAD
     // ObjCheck: Report "Check Translation Management";
+=======
+        ObjCheck: Report Check;
+        ObjGLLedgerSet: Record "General Ledger Setup";
+>>>>>>> 4399eb57747677e662f31820fe72e4f35c86a95b
 
 }
 
@@ -825,8 +835,14 @@ report 91009 "Cash Withdrawal "
             trigger OnAfterGetRecord()
             begin
                 CompanyInformation.get;
+                ObjGenLedSetUp.get();
+
                 CompanyInformation.CalcFields(Picture);
+<<<<<<< HEAD
                 // ObjCheck.FormatNoText(AmountInWords, Amount, 1033, 'KES');
+=======
+                ObjCheck.FormatNoText(AmountInWords, Amount, ObjGenLedSetUp."LCY Code");
+>>>>>>> 4399eb57747677e662f31820fe72e4f35c86a95b
 
                 ChargeAount := 0;
                 ObjCalcSchemes.reset;
@@ -873,10 +889,15 @@ report 91009 "Cash Withdrawal "
         CompanyInformation: Record "Company Information";
         DateFilter: Text;
         AmountInWords: array[2] of Text[80];
+<<<<<<< HEAD
         // ObjCheck: Report "Check Translation Management";
+=======
+        ObjCheck: Report Check;
+>>>>>>> 4399eb57747677e662f31820fe72e4f35c86a95b
         ChargeAount: Decimal;
         ObjCharges: Record "Transaction Charges";
         ObjCalcSchemes: Record "Transaction Calc. Scheme";
+        ObjGenLedSetUp: Record "General Ledger Setup";
 
 
 }

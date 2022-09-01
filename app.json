@@ -14,12 +14,14 @@
   "screenshots": [],
   "platform": "1.0.0.0",
   "application": "18.0.0.0",
-  "runtime": "7.0",
-  "target": "OnPrem",
   "idRanges": [
     {
-      "from": 90000,
+      "from": 1,
       "to": 99999
     }
-  ]
+  ], 
+  "showMyCode": true,
+  "runtime": "7.0",
+  "target": "OnPrem"
+
 }
