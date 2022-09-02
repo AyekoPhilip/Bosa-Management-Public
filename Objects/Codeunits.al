@@ -5719,9 +5719,9 @@ codeunit 90004 ThirdPartyIntegrations
         Member: Record Members;
         Vendor: Record Vendor;
         ATMLedger: Record "ATM Ledger";
-        EntryNo:Integer;
+        EntryNo: Integer;
     begin
-        EntryNo:=1;
+        EntryNo := 1;
         Vendor.Reset();
         Vendor.SetFilter("Card No", '<>%1', '');
         Vendor.SetRange("Member No.", MemberNo);
@@ -5731,7 +5731,7 @@ codeunit 90004 ThirdPartyIntegrations
                 Vendor.Modify(True);
                 ATMLedger.Reset();
                 if ATMLedger.Findlast then
-                EntryNo:=ATMLedger."Entry No"+1;                
+                    EntryNo := ATMLedger."Entry No" + 1;
             until Vendor.Next() = 0;
         end;
         ResponseCode := '00';

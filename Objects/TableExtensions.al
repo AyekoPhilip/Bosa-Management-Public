@@ -26,7 +26,8 @@ tableextension 90009 VendorExt extends Vendor
         }
         field(90002; "Account Type"; Option)
         {
-            OptionMembers = "Supplier","Sacco","Loan","Service Provider","EFT";
+            OptionMembers = Supplier,Sacco,Loan,ServiceProvider,EFT;
+            OptionCaption = 'Supplier,Sacco,Loan,Service Provider,EFT';
         }
         field(90003; Status; Option)
         {

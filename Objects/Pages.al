@@ -1439,7 +1439,7 @@ page 90011 "Member Accounts"
     SourceTable = Vendor;
     InsertAllowed = false;
     DeleteAllowed = false;
-    SourceTableView = where("Account Type" = filter(Sacco | loan));
+    SourceTableView = where("Account Type" = filter(Sacco | Loan));
     layout
     {
         area(Content)
@@ -21951,7 +21951,7 @@ page 90290 "Member Accounts List"
     InsertAllowed = false;
     DeleteAllowed = false;
     CardPageId = "Member Account Card";
-    SourceTableView = where("Account Type" = filter(Sacco | loan));
+    SourceTableView = where("Account Type" = filter(Sacco | Loan));
     layout
     {
         area(Content)

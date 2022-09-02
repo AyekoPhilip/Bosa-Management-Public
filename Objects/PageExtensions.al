@@ -105,7 +105,7 @@ pageextension 90003 "Vendor List Ext." extends "Vendor List"
     trigger OnOpenPage()
     begin
         Rec.FilterGroup(2);
-        Rec.SetRange("Account Type", Rec."Account Type"::"Supplier");
+        Rec.SetRange("Account Type", Rec."Account Type"::Supplier);
         Rec.FilterGroup(0);
     end;
 

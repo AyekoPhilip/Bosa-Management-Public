@@ -121,7 +121,7 @@ table 90000 "Sacco Setup"
         }
         field(29; "Member Exits Control"; Code[20])
         {
-            TableRelation = Vendor where("Account Type" = const("Supplier"));
+            TableRelation = Vendor where("Account Type" = const(Supplier));
         }
         field(30; "Defaulter Notice Nos"; Code[20])
         {
@@ -2555,7 +2555,7 @@ table 90015 "Loan Application"
         }
         field(17; "Disbursement Account"; Code[20])
         {
-            TableRelation = if ("Mode of Disbursement" = const(FOSA)) Vendor where("Member No." = field("Member No."), "Account Type" = const("Sacco"))
+            TableRelation = if ("Mode of Disbursement" = const(FOSA)) Vendor where("Member No." = field("Member No."), "Account Type" = const(Sacco))
             else
             if ("Mode of Disbursement" = const(Bank)) "Bank Account";
         }
@@ -3553,7 +3553,7 @@ table 90023 "Standing Order"
         }
         field(10; "Destination Account"; code[20])
         {
-            TableRelation = if ("Standing Order Class" = const(External)) Vendor where("Account Type" = const(eft))
+            TableRelation = if ("Standing Order Class" = const(External)) Vendor where("Account Type" = const(EFT))
             else
             if ("Standing Order Class" = filter("Loan Principle+Interest" | "Loan-Interest" | "Loan-Principle")) "Loan Application" where("Loan Balance" = filter(> 0), "Member No." = field("Destination Member No"))
             else
@@ -3728,7 +3728,7 @@ table 90024 Charges
         {
             TableRelation = if ("Post to Account Type" = const("G/L Account")) "G/L Account" where("Direct Posting" = const(true))
             else
-            Vendor where("Account Type" = filter(<> sacco));
+            Vendor where("Account Type" = filter(<> Sacco));
         }
     }
 
@@ -3806,7 +3806,7 @@ table 90025 "Product Charges"
             Editable = false;
             TableRelation = if ("Post to Account Type" = const("G/L Account")) "G/L Account" where("Direct Posting" = const(true))
             else
-            Vendor where("Account Type" = filter(<> sacco));
+            Vendor where("Account Type" = filter(<> Sacco));
         }
     }
 
@@ -3885,7 +3885,7 @@ table 90026 "Loan Charges"
             Editable = false;
             TableRelation = if ("Post to Account Type" = const("G/L Account")) "G/L Account" where("Direct Posting" = const(true))
             else
-            Vendor where("Account Type" = filter(<> sacco));
+            Vendor where("Account Type" = filter(<> Sacco));
         }
     }
 
@@ -5628,7 +5628,7 @@ table 90041 "Payments Header"
         {
             TableRelation = if ("Payee Account Type" = const(Service)) "G/L Account" where("Direct Posting" = const(True))
             else
-            if ("Payee Account Type" = const(Supplier)) Vendor where("Account Type" = const("Supplier"))
+            if ("Payee Account Type" = const(Supplier)) Vendor where("Account Type" = const(Supplier))
             else
             if ("Payee Account Type" = const(Customer)) Customer;
             trigger OnValidate()
@@ -8062,7 +8062,7 @@ table 90062 "Member Exit Header"
         Field(7; "Holding Account"; Code[20])
         {
             Editable = false;
-            TableRelation = Vendor Where("Account Type" = CONST("Supplier"));
+            TableRelation = Vendor Where("Account Type" = CONST(Supplier));
         }
         Field(8; "Total Assets"; Decimal)
         {
@@ -12833,7 +12833,7 @@ table 90119 "Online Loan Application"
         }
         field(17; "Disbursement Account"; Code[20])
         {
-            TableRelation = if ("Mode of Disbursement" = const(FOSA)) Vendor where("Member No." = field("Member No."), "Account Type" = const("Sacco"))
+            TableRelation = if ("Mode of Disbursement" = const(FOSA)) Vendor where("Member No." = field("Member No."), "Account Type" = const(Sacco))
             else
             if ("Mode of Disbursement" = const(Bank)) "Bank Account";
         }
