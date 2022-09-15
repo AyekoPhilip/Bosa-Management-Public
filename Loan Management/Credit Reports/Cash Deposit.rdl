@@ -33,7 +33,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>0.17639cm</Top>
+            <Top>4.62139cm</Top>
             <Left>0.74648cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -65,7 +65,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>4.58806cm</Top>
+            <Top>9.98556cm</Top>
             <Left>0.7112cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -98,7 +98,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>3.9175cm</Top>
+            <Top>9.315cm</Top>
             <Left>0.7112cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -131,7 +131,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>3.3175cm</Top>
+            <Top>7.7625cm</Top>
             <Left>0.7112cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -164,7 +164,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>2.64694cm</Top>
+            <Top>7.09194cm</Top>
             <Left>0.67592cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -197,7 +197,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>1.97639cm</Top>
+            <Top>6.42139cm</Top>
             <Left>0.67592cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -230,7 +230,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>1.37639cm</Top>
+            <Top>5.82139cm</Top>
             <Left>0.7112cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -263,7 +263,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>0.77639cm</Top>
+            <Top>5.22139cm</Top>
             <Left>0.7112cm</Left>
             <Height>0.56472cm</Height>
             <Width>3.1985cm</Width>
@@ -293,7 +293,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>0.17639cm</Top>
+            <Top>4.62139cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -323,7 +323,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>4.58806cm</Top>
+            <Top>9.98556cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -353,7 +353,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>3.9175cm</Top>
+            <Top>9.315cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -383,7 +383,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>3.3175cm</Top>
+            <Top>7.7625cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -413,7 +413,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>2.68222cm</Top>
+            <Top>7.12722cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -443,7 +443,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>1.97639cm</Top>
+            <Top>6.42139cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -473,7 +473,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>1.37639cm</Top>
+            <Top>5.82139cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -503,7 +503,7 @@
               </Paragraph>
             </Paragraphs>
             <rd:DefaultName>Textbox5</rd:DefaultName>
-            <Top>0.77639cm</Top>
+            <Top>5.22139cm</Top>
             <Left>4.01553cm</Left>
             <Height>0.6cm</Height>
             <Width>4.48967cm</Width>
@@ -518,296 +518,155 @@
               <PaddingBottom>2pt</PaddingBottom>
             </Style>
           </Textbox>
+          <Image Name="Image1">
+            <Source>Database</Source>
+            <Value>=First(Fields!CompanyLogo.Value, "DataSet_Result")</Value>
+            <MIMEType>image/jpeg</MIMEType>
+            <Sizing>FitProportional</Sizing>
+            <Top>0.35137cm</Top>
+            <Left>0.74648cm</Left>
+            <Height>2.30433cm</Height>
+            <Width>2.47367cm</Width>
+            <ZIndex>16</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Image>
+          <Textbox Name="Textbox1">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>=First(Fields!CompanyName.Value, "DataSet_Result")</Value>
+                    <Style>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <rd:DefaultName>Textbox1</rd:DefaultName>
+            <Top>2.79681cm</Top>
+            <Left>0.74648cm</Left>
+            <Height>0.6cm</Height>
+            <Width>9.08283cm</Width>
+            <ZIndex>17</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Textbox Name="Textbox2">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>CASH DEPOSIT SLIP</Value>
+                    <Style>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <rd:DefaultName>Textbox1</rd:DefaultName>
+            <Top>3.70389cm</Top>
+            <Left>0.74648cm</Left>
+            <Height>0.6cm</Height>
+            <Width>9.08283cm</Width>
+            <ZIndex>18</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Textbox Name="Textbox8">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Deposited By:</Value>
+                    <Style>
+                      <FontFamily>Segoe UI</FontFamily>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <rd:DefaultName>Textbox5</rd:DefaultName>
+            <Top>8.46833cm</Top>
+            <Left>0.74648cm</Left>
+            <Height>0.56472cm</Height>
+            <Width>3.1985cm</Width>
+            <ZIndex>19</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Textbox Name="Textbox22">
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>=First(Fields!Transacted_By_Name.Value, "DataSet_Result")</Value>
+                    <Style />
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <rd:DefaultName>Textbox5</rd:DefaultName>
+            <Top>8.46833cm</Top>
+            <Left>4.05081cm</Left>
+            <Height>0.6cm</Height>
+            <Width>4.48967cm</Width>
+            <ZIndex>20</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
         </ReportItems>
-        <Height>6.05367cm</Height>
+        <Height>10.79723cm</Height>
         <Style />
       </Body>
-      <Width>16.14311cm</Width>
+      <Width>10.74561cm</Width>
       <Page>
-        <PageHeader>
-          <Height>4.95187cm</Height>
-          <PrintOnFirstPage>true</PrintOnFirstPage>
-          <PrintOnLastPage>true</PrintOnLastPage>
-          <ReportItems>
-            <Rectangle Name="Rectangle1">
-              <ReportItems>
-                <Image Name="Image1">
-                  <Source>Database</Source>
-                  <Value>=First(Fields!CompanyLogo.Value, "DataSet_Result")</Value>
-                  <MIMEType>image/jpeg</MIMEType>
-                  <Sizing>FitProportional</Sizing>
-                  <Left>0.00833in</Left>
-                  <Height>1.1875in</Height>
-                  <Width>1.42708in</Width>
-                  <Style>
-                    <Border>
-                      <Style>None</Style>
-                    </Border>
-                  </Style>
-                </Image>
-                <Textbox Name="Textbox4">
-                  <CanGrow>true</CanGrow>
-                  <KeepTogether>true</KeepTogether>
-                  <Paragraphs>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>=First(Fields!CompanyName.Value, "DataSet_Result")</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontSize>12pt</FontSize>
-                            <FontWeight>Bold</FontWeight>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style />
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>NAIROBI P.O Box </Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value>=First(Fields!CompanyAddress1.Value, "DataSet_Result")</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value> - </Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value>=First(Fields!CompanyAddress2.Value, "DataSet_Result")</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style />
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>Email :</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontWeight>Bold</FontWeight>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value xml:space="preserve"> </Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value>=First(Fields!CompanyEmail.Value, "DataSet_Result")</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style />
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>Phone :</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontWeight>Bold</FontWeight>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value>=First(Fields!CompanyPhone.Value, "DataSet_Result")</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style />
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>Website :</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontWeight>Bold</FontWeight>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value> www.ushuru.co.ke</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style />
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value />
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style />
-                    </Paragraph>
-                  </Paragraphs>
-                  <rd:DefaultName>Textbox1</rd:DefaultName>
-                  <Left>1.47708in</Left>
-                  <Height>1.1875in</Height>
-                  <Width>2.48333in</Width>
-                  <ZIndex>1</ZIndex>
-                  <Style>
-                    <Border>
-                      <Style>None</Style>
-                    </Border>
-                    <PaddingLeft>2pt</PaddingLeft>
-                    <PaddingRight>2pt</PaddingRight>
-                    <PaddingTop>2pt</PaddingTop>
-                    <PaddingBottom>2pt</PaddingBottom>
-                  </Style>
-                </Textbox>
-                <Textbox Name="Textbox8">
-                  <CanGrow>true</CanGrow>
-                  <KeepTogether>true</KeepTogether>
-                  <Paragraphs>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>=Globals!ExecutionTime</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontSize>8pt</FontSize>
-                            <FontWeight>Bold</FontWeight>
-                            <Format>f</Format>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                      </Style>
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>Page </Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontSize>8pt</FontSize>
-                            <FontWeight>Bold</FontWeight>
-                            <Format>0;(0)</Format>
-                          </Style>
-                        </TextRun>
-                        <TextRun>
-                          <Value>=Globals!OverallPageNumber</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontSize>8pt</FontSize>
-                            <FontWeight>Bold</FontWeight>
-                            <Format>0;(0)</Format>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                      </Style>
-                    </Paragraph>
-                    <Paragraph>
-                      <TextRuns>
-                        <TextRun>
-                          <Value>=User!UserID</Value>
-                          <Style>
-                            <FontFamily>Segoe UI</FontFamily>
-                            <FontSize>8pt</FontSize>
-                            <FontWeight>Bold</FontWeight>
-                            <Format>f</Format>
-                          </Style>
-                        </TextRun>
-                      </TextRuns>
-                      <Style>
-                        <TextAlign>Right</TextAlign>
-                      </Style>
-                    </Paragraph>
-                  </Paragraphs>
-                  <rd:DefaultName>Textbox4</rd:DefaultName>
-                  <Left>4.02985in</Left>
-                  <Height>0.59375in</Height>
-                  <Width>2.16667in</Width>
-                  <ZIndex>2</ZIndex>
-                  <Style>
-                    <Border>
-                      <Style>None</Style>
-                    </Border>
-                    <PaddingLeft>2pt</PaddingLeft>
-                    <PaddingRight>2pt</PaddingRight>
-                    <PaddingTop>2pt</PaddingTop>
-                    <PaddingBottom>2pt</PaddingBottom>
-                  </Style>
-                </Textbox>
-              </ReportItems>
-              <KeepTogether>true</KeepTogether>
-              <Top>0.24375in</Top>
-              <Height>1.1875in</Height>
-              <Width>6.25555in</Width>
-              <Style>
-                <Border>
-                  <Style>Solid</Style>
-                </Border>
-              </Style>
-            </Rectangle>
-            <Textbox Name="Textbox22">
-              <CanGrow>true</CanGrow>
-              <KeepTogether>true</KeepTogether>
-              <Paragraphs>
-                <Paragraph>
-                  <TextRuns>
-                    <TextRun>
-                      <Value>CASH DEPOSIT</Value>
-                      <Style>
-                        <FontSize>12pt</FontSize>
-                        <FontWeight>Bold</FontWeight>
-                      </Style>
-                    </TextRun>
-                  </TextRuns>
-                  <Style>
-                    <TextAlign>Center</TextAlign>
-                  </Style>
-                </Paragraph>
-              </Paragraphs>
-              <rd:DefaultName>Textbox22</rd:DefaultName>
-              <Top>3.98498cm</Top>
-              <Left>1.87537cm</Left>
-              <Height>0.7905cm</Height>
-              <Width>4.82833cm</Width>
-              <ZIndex>1</ZIndex>
-              <Style>
-                <Border>
-                  <Style>None</Style>
-                </Border>
-                <PaddingLeft>2pt</PaddingLeft>
-                <PaddingRight>2pt</PaddingRight>
-                <PaddingTop>2pt</PaddingTop>
-                <PaddingBottom>2pt</PaddingBottom>
-              </Style>
-            </Textbox>
-          </ReportItems>
-          <Style>
-            <Border>
-              <Style>None</Style>
-            </Border>
-          </Style>
-        </PageHeader>
         <PageHeight>27.94cm</PageHeight>
         <PageWidth>21.59cm</PageWidth>
         <LeftMargin>0cm</LeftMargin>
@@ -920,6 +779,12 @@ End Function
         </Field>
         <Field Name="AmountInWords">
           <DataField>AmountInWords</DataField>
+        </Field>
+        <Field Name="Transacted_By_Name">
+          <DataField>Transacted_By_Name</DataField>
+        </Field>
+        <Field Name="Transacted_By_ID_No">
+          <DataField>Transacted_By_ID_No</DataField>
         </Field>
       </Fields>
       <Query>

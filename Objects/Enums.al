@@ -89,3 +89,34 @@ enum 90004 "Prouct Source"
     {
     }
 }
+enum 90005 "Vendor Account Type"
+{
+    Extensible = true;
+    value(0; Supplier)
+    {
+    }
+    value(1; Sacco)
+    {
+    }
+    value(2; Loan)
+    {
+    }
+    value(3; EFT)
+    {
+    }
+}
+
+enum 90006 "Recovery Type"
+{
+    Extensible = true;
+    value(0; Loan)
+    {
+    }
+    value(1; Account)
+    {
+    }
+    value(2; External)
+    {
+    }
+
+}

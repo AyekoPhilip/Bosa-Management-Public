@@ -12,8 +12,9 @@
             "serverInstance": "BC180",    
             "authentication": "UserPassword",*/
             //Ushuru Server - UAT                     
-            "server": "http://192.168.0.116",
-            "port": 9049,      
+            //"server": "http://192.168.0.116",
+            "server": "http://192.168.0.15",
+            "port": 7049,      
             "serverInstance": "BC180",    
             "authentication": "UserPassword",
             

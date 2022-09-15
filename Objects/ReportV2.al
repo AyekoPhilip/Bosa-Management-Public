@@ -718,7 +718,7 @@ report 91008 "Cash Deposit Receipt "
     UsageCategory = ReportsAndAnalysis;
     ApplicationArea = All;
     DefaultLayout = RDLC;
-    RDLCLayout = '.\Loan Management\Credit Reports\Cash Receipt.rdl';
+    RDLCLayout = '.\Loan Management\Credit Reports\Cash Deposit.rdl';
     dataset
     {
         dataitem("Teller Transactions"; "Teller Transactions")
@@ -743,12 +743,15 @@ report 91008 "Cash Deposit Receipt "
             column(Posting_Date; "Posting Date") { }
             column(Created_By; "Created By") { }
             column(AmountInWords; AmountInWords[1]) { }
+            column(Transacted_By_Name; "Transacted By Name") { }
+            column(Transacted_By_ID_No; "Transacted By ID No") { }
 
             trigger OnAfterGetRecord()
             begin
                 CompanyInformation.get;
                 ObjGLLedgerSet.get();
                 CompanyInformation.CalcFields(Picture);
+                ObjCheck.InitTextVariable();
                 ObjCheck.FormatNoText(AmountInWords, Amount, ObjGLLedgerSet."LCY Code");
 
             end;
@@ -786,7 +789,7 @@ report 91008 "Cash Deposit Receipt "
         DateFilter: Text;
         AmountInWords: array[2] of Text[80];
         ObjGLLedgerSet: Record "General Ledger Setup";
-        ObjCheck: Report Check;
+        ObjCheck: Codeunit ConvertNoToText;
 
 
 }
@@ -830,6 +833,7 @@ report 91009 "Cash Withdrawal "
                 ObjGenLedSetUp.get();
 
                 CompanyInformation.CalcFields(Picture);
+                ObjCheck.InitTextVariable();
                 ObjCheck.FormatNoText(AmountInWords, Amount, ObjGenLedSetUp."LCY Code");
 
                 ChargeAount := 0;
@@ -877,7 +881,7 @@ report 91009 "Cash Withdrawal "
         CompanyInformation: Record "Company Information";
         DateFilter: Text;
         AmountInWords: array[2] of Text[80];
-        ObjCheck: Report Check;
+        ObjCheck: Codeunit ConvertNoToText;
         ChargeAount: Decimal;
         ObjCharges: Record "Transaction Charges";
         ObjCalcSchemes: Record "Transaction Calc. Scheme";
@@ -885,4 +889,164 @@ report 91009 "Cash Withdrawal "
 
 
 }
+
+//Loan Repayment
+report 91010 "Loan Repayment Receipt"
+{
+    UsageCategory = Administration;
+    Caption = 'Loan Repayment Slip';
+    ApplicationArea = All;
+    RDLCLayout = '.\Loan Management\Credit Reports\LoanRepayment.rdl';
+    dataset
+    {
+        dataitem("Receipt Header"; "Receipt Header")
+        {
+            RequestFilterFields = "Receipt No.", "Posting Date";
+            column(Receipt_No_; "Receipt No.") { }
+            column(Receiving_Account_Type; "Receiving Account Type") { }
+            column(Receiving_Account_No_; "Receiving Account No.") { }
+            column(Receiving_Account_Name; "Receiving Account Name") { }
+            column(Posting_Date; "Posting Date") { }
+            column(Posting_Description; "Posting Description") { }
+            column(Member_No_1; "Member No.") { }
+            column(Member_Name; "Member Name") { }
+            column(Account_No_; "Account No.") { }
+            column(Amount; Amount) { }
+            column("CompanyLogo"; CompanyInformation.Picture) { }
+            column("CompanyName"; CompanyInformation.Name) { }
+            column("CompanyAddress1"; CompanyInformation.Address) { }
+            column("CompanyAddress2"; CompanyInformation."Address 2") { }
+            column("CompanyPhone"; CompanyInformation."Phone No.") { }
+            column("CompanyEmail"; CompanyInformation."E-Mail") { }
+            column(AmountInWords; AmountInWords[1]) { }
+            dataitem("Receipt Lines"; "Receipt Lines")
+            {
+                DataItemLink = "Receipt No." = field("Receipt No.");
+                column(Receipt_Type; "Receipt Type") { }
+                column(Description; Description) { }
+                column(AllocationAmount; Amount) { }
+                column(Member_No_; "Member No.") { }
+                column(MemberName; MemberName) { }
+                column(Loan_No_; "Loan No.") { }
+                column(Product_Name; "Product Name") { }
+
+                trigger OnAfterGetRecord()
+                begin
+                    MemberName := '';
+                    if Members.Get("Member No.") then
+                        MemberName := Members."Full Name"
+                    else
+                        MemberName := 'Non Member';
+                end;
+
+            }
+
+            trigger OnAfterGetRecord()
+            begin
+                GenLegSet.get;
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                //CalcFields("Receipt Header".Amount);
+                ObjCheck.InitTextVariable();
+                ObjCheck.FormatNoText(AmountInWords, "Receipt Header".Amount, GenLegSet."LCY Code");
+            end;
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        Members: Record Members;
+        MemberName: Text;
+        ObjCheck: Codeunit ConvertNoToText;
+        AmountInWords: array[2] of Text[80];
+        GenLegSet: Record "General Ledger Setup";
+}
+
+//Process Reports
+report 91011 "Validate ATM Cards"
+{
+    UsageCategory = Administration;
+    Caption = 'Validate ATM Cradc';
+    ApplicationArea = All;
+    ProcessingOnly = true;
+    //RDLCLayout = '.\Loan Management\Credit Reports\LoanRepayment.rdl';
+    dataset
+    {
+        dataitem("ATM Application"; "ATM Application")
+        {
+
+
+            trigger OnAfterGetRecord()
+            begin
+                GenLegSet.get;
+                CompanyInformation.get;
+                CompanyInformation.CalcFields(Picture);
+                ObjCheck.InitTextVariable();
+                //ObjCheck.FormatNoText(AmountInWords,);
+
+                ObjMember.reset;
+                ObjMember.SetRange(ObjMember."Member No.", "ATM Application"."Member No");
+                if ObjMember.findset then begin
+                    ObjMember.Validate("Member No.");
+                    ObjMember.modify;
+                end;
+
+            end;
+        }
+    }
+
+    requestpage
+    {
+        layout
+        {
+            area(Content)
+            {
+                group(GroupName)
+                {
+
+                }
+            }
+        }
+
+        actions
+        {
+            area(processing)
+            {
+
+            }
+        }
+    }
+
+    var
+        CompanyInformation: Record "Company Information";
+        Members: Record Members;
+        MemberName: Text;
+        ObjCheck: Codeunit ConvertNoToText;
+        AmountInWords: array[2] of Text[80];
+        GenLegSet: Record "General Ledger Setup";
+        ObjMember: Record Members;
+}
+
 //O4FPahuip1dm8SDKxVLv

@@ -172,6 +172,10 @@ page 90002 "Product Factory"
                 {
                     StyleExpr = StyleText;
                 }
+                field("View Online"; rec."View Online")
+                {
+                    StyleExpr = StyleText;
+                }
 
             }
         }
@@ -275,6 +279,7 @@ page 90004 "Product Card"
                 field("Product Type"; Rec."Product Type") { }
                 field(Name; Rec.Name) { }
                 field("Posting Group"; Rec."Posting Group") { }
+                field("Checkoff Product"; "Checkoff Product") { }
                 field(Prefix; Rec.Prefix) { }
                 field(Suffix; Rec.Suffix) { }
                 field(Status; Rec.Status) { }
@@ -1309,6 +1314,7 @@ page 90010 Member
                 field("Member Image"; Rec."Member Image") { }
                 field("Front ID Image"; Rec."Front ID Image") { }
                 field("Back ID Image"; Rec."Back ID Image") { }
+                field("Member Signature"; Rec."Member Signature") { }
             }
             part("Accounts"; "Member Accounts")
             {
@@ -1668,6 +1674,10 @@ page 90014 Receipt
             {
                 field("Receipt No."; Rec."Receipt No.") { }
                 field("Posting Date"; Rec."Posting Date") { }
+                field("Member No."; rec."Member No.") { }
+                field("Member Name"; Rec."Member Name") { }
+                field("Account No."; Rec."Account No.") { }
+
                 field("Receiving Account Type"; Rec."Receiving Account Type") { }
                 field("Receiving Account No."; Rec."Receiving Account No.") { }
                 field("Mannual Receipt No."; "Mannual Receipt No.") { }
@@ -1676,6 +1686,7 @@ page 90014 Receipt
                 field("Global Dimension 1 Code"; Rec."Global Dimension 1 Code") { }
                 field("Global Dimension 2 Code"; Rec."Global Dimension 2 Code") { }
                 field(Amount; Rec.Amount) { }
+
                 field("Allocated Amount"; Rec."Allocated Amount") { }
                 field("Posting Description"; Rec."Posting Description")
                 {
@@ -1787,10 +1798,22 @@ page 90014 Receipt
                 ApplicationArea = All;
                 image = Post;
                 trigger OnAction()
+                var
+                    Receipt: Record "Receipt Header";
                 begin
-                    TestField("Approval Status", "Approval Status"::Approved);
+                    if receipt."Payment Method Code" <> 'CASH' then begin
+                        //TestField("Approval Status", "Approval Status"::Approved);
+                    end;
                     if Confirm('Do you want to Post?') then begin
                         ReceiptManagement.PostReceipt(Rec);
+                        Receipt.Reset();
+                        Receipt.SetRange("Receipt No.", Rec."Receipt No.");
+                        if Receipt.FindFirst() then begin
+                            if receipt."Payment Method Code" <> 'CASH' then
+                                Report.RunModal(Report::"Cash Receipt", true, false, Receipt)
+                            else
+                                report.RunModal(Report::"Loan Repayment Receipt", true, false, Receipt);
+                        end;
                     end
                 end;
             }
@@ -1804,8 +1827,12 @@ page 90014 Receipt
                 begin
                     Receipt.Reset();
                     Receipt.SetRange("Receipt No.", Rec."Receipt No.");
-                    if Receipt.FindFirst() then
-                        Report.RunModal(Report::"Cash Receipt", true, false, Receipt);
+                    if Receipt.FindFirst() then begin
+                        if receipt."Payment Method Code" <> 'CASH' then
+                            Report.RunModal(Report::"Cash Receipt", true, false, Receipt)
+                        else
+                            report.RunModal(Report::"Loan Repayment Receipt", true, false, Receipt);
+                    end;
                 end;
 
             }
@@ -1836,11 +1863,13 @@ page 90015 "Receipt Lines"
                 field(Amount; Rec.Amount) { }
                 field("Loan No."; Rec."Loan No.") { }
                 field("Posting Type"; Rec."Posting Type") { }
+                // field("Posting Type"; Rec."Posting Type") { }
                 field("Transaction Type"; Rec."Transaction Type") { }
                 field(decription; Rec.description) { }
                 field("Bal. Account No."; Rec."Bal. Account No.") { }
                 field("Loan Balance"; "Loan Balance") { }
                 field("Prorated Interest"; "Prorated Interest") { }
+                field("Product Name"; "Product Name") { }
             }
         }
     }
@@ -8791,7 +8820,10 @@ page 90104 "Loan Guarantors"
         }
         area(Factboxes)
         {
-
+            part(Member; "Member Statistics Factbox")
+            {
+                SubPageLink = "Member No." = field("Member No");
+            }
         }
     }
 
@@ -8871,7 +8903,10 @@ page 90106 "Loan Recoveries"
                 {
                     Visible = isSOAP;
                 }
-                field("Recovery Type"; Rec."Recovery Type") { }
+                field("Recovery Type"; Rec."Recovery Type")
+                {
+
+                }
                 field("Recovery Code"; Rec."Recovery Code") { }
                 field("Recovery Description"; Rec."Recovery Description") { }
                 field(Amount; Rec.Amount) { }
@@ -12673,6 +12708,7 @@ page 90157 "Mobile Transactions"
                 field("Entry No"; Rec."Entry No") { }
                 field("Document No"; Rec."Document No") { }
                 field("Transaction Type"; rec."Transaction Type") { }
+                field("Transaction Name"; "Transaction Name") { }
                 field("Cr_Member No"; Rec."Cr_Member No") { }
                 field("Credit Member Name"; "Credit Member Name") { }
                 field("Cr_Account No"; Rec."Cr_Account No") { }
@@ -14125,20 +14161,27 @@ page 90177 "Processed ATM Applications"
     {
         area(Processing)
         {
-            action(ActionName)
+            action("Bulk Link")
             {
                 ApplicationArea = All;
 
                 trigger OnAction()
                 begin
-
+                    ATMApp.Reset();
+                    CurrPage.SetSelectionFilter(ATMApp);
+                    if ATMApp.FindSet() then begin
+                        repeat
+                            MemberMgt.PostATMLinking(ATMApp."Application No");
+                        until ATMApp.Next() = 0;
+                    end;
                 end;
             }
         }
     }
 
     var
-        myInt: Integer;
+        MemberMgt: Codeunit "Member Management";
+        ATMApp: Record "ATM Application";
 }
 page 90178 "ATM Applications Lookup"
 {
@@ -18785,6 +18828,11 @@ page 90247 "Account Openning"
                 field("Created On"; Rec."Created On") { }
                 field("Juniour Account"; Rec."Juniour Account") { }
             }
+            group("Member Images")
+            {
+                field("Member Image"; "Member Image") { }
+                field("Member Signature"; "Member Signature") { }
+            }
         }
     }
 
@@ -19920,6 +19968,7 @@ page 90267 "Mobile Application"
                 field(Reactivation; Reactivation) { }
                 field("Full Name"; "Full Name") { }
                 field("Phone No"; "Phone No") { }
+                field("Mobile Transacting No"; "Mobile Transacting No") { }
                 field("ID No"; "ID No") { }
                 field("FOSA Account"; "FOSA Account") { }
             }
@@ -20043,6 +20092,7 @@ page 90268 "Mobile Application(RO)"
                 field("Member No"; "Member No") { }
                 field("Full Name"; "Full Name") { }
                 field("Phone No"; "Phone No") { }
+                field("Mobile Transacting No"; "Mobile Transacting No") { }
                 field("FOSA Account"; "FOSA Account") { }
             }
             group("Audit Trail")
@@ -20371,6 +20421,8 @@ page 90272 "Teller Transaction Card(RO)"
                 field("Approval Required"; Rec."Approval Required") { }
                 field("Approval Status"; Rec."Approval Status") { }
                 field(Posted; Rec.Posted) { }
+                field("Book Balance"; "Book Balance") { }
+                // field("Available Balance"; "Available Balance") { }
             }
         }
         area(FactBoxes)

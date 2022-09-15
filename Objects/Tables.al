@@ -604,6 +604,7 @@ table 90001 "Product Factory"
         {
             TableRelation = "Bank Account";
         }
+        field(86; "Checkoff Product"; Boolean) { }
 
     }
 
@@ -2187,6 +2188,30 @@ table 90013 "Receipt Header"
             Editable = false;
         }
         field(17; "Mannual Receipt No."; Code[100]) { }
+        field(30; "Member No."; Code[20])
+        {
+            TableRelation = Members;
+            trigger OnValidate()
+            var
+                ObjMember: Record Members;
+            begin
+                ObjMember.reset;
+                ObjMember.SetRange(ObjMember."Member No.", "Member No.");
+                if ObjMember.findset then begin
+                    "Member Name" := ObjMember."Full Name";
+                end;
+
+            end;
+        }
+        field(40; "Account No."; Code[50])
+        {
+            TableRelation = Vendor."No." where("Member No." = field("Member No."), "Account Code" = filter('S01'));
+        }
+        field(50; "Member Name"; Text[250])
+        {
+            Editable = false;
+        }
+
     }
 
     keys
@@ -2292,13 +2317,35 @@ table 90014 "Receipt Lines"
             else
             if ("Posting Type" = const("Inter Bank")) "Bank Account" where(Blocked = const(false))
             else
-            if ("Posting Type" = const("Vendor Receipt")) Vendor where("Account Type" = const(0))
+            if ("Posting Type" = const("Vendor Receipt")) Vendor where("Account Type" = filter(0))
             else
             if ("Posting Type" = const("Service Receipt")) "G/L Account" where("Direct Posting" = const(true));
             trigger OnValidate()
+            var
+                ObjRecPostType: Record "Receipt Posting Types";
+                ObjProdfactory: Record "Product Factory";
             begin
+                ObjRecPostType.Get("Receipt Type");
+                if ObjRecPostType."Posting Type" = ObjRecPostType."Posting Type"::"Loan Receipt" then begin
+                    // Error('You are not allowed to change this account type when Receipt Type is %', "Receipt Type");
+                end;
+                if ObjProdfactory.Get("Account Type") then
+                    "Product Name" := ObjProdfactory.Name;
+
+
+
+
+
+
                 validate("Bal. Account No.");
             end;
+
+
+
+
+
+
+
         }
         field(8; "Bal. Account No."; Code[20])
         {
@@ -2331,7 +2378,8 @@ table 90014 "Receipt Lines"
                             LoanApplication.SetFilter("Loan Balance", '>0');
                             if LoanApplication.FindFirst() then
                                 "Loan No." := LoanApplication."Application No";
-                            Validate("Loan No.");
+                            if "Loan No." <> '' then
+                                Validate("Loan No.");
                         end;
                 end;
             end;
@@ -2349,13 +2397,14 @@ table 90014 "Receipt Lines"
                 LoanApplication.Get("Loan No.");
                 LoanApplication.CalcFields("Loan Balance");
                 "Loan Balance" := LoanApplication."Loan Balance";
-                "Prorated Interest" := LoansMgt.GetProratedInterest("Loan No.", Receipt."Posting Date");
+                //"Prorated Interest" := LoansMgt.GetProratedInterest("Loan No.", Receipt."Posting Date");//Fred Advised by Caro 
             end;
         }
         field(10; Amount; Decimal) { }
         field(11; "Member No."; Code[20])
         {
-            TableRelation = IF ("Posting Type" = filter("Loan Receipt" | "Member Receipt")) Members;
+            //TableRelation = IF ("Posting Type" = filter("Loan Receipt" | "Member Receipt")) Members;
+            Editable = false;
             trigger OnValidate()
             begin
                 Validate("Bal. Account No.");
@@ -2369,6 +2418,15 @@ table 90014 "Receipt Lines"
         {
             Editable = false;
         }
+
+
+        //Fred
+        field(20; "Product Name"; Text[250])
+        {
+            Editable = false;
+        }
+
+
     }
 
     keys
@@ -2385,7 +2443,16 @@ table 90014 "Receipt Lines"
         ProductFactory: Record "Product Factory";
 
     trigger OnInsert()
+    var
+        ObjReceiptHeader: Record "Receipt Header";
     begin
+        ObjReceiptHeader.reset;
+        ObjReceiptHeader.SetRange(ObjReceiptHeader."Receipt No.", "Receipt No.");
+        if ObjReceiptHeader.findset then begin
+            "Member No." := ObjReceiptHeader."Member No.";
+
+        end;
+
 
     end;
 
@@ -2566,11 +2633,13 @@ table 90015 "Loan Application"
             var
                 EndDate: Date;
             begin
-                if "Posting Date" <> 0D then begin
+                if "Posting Date" <> 0D then
                     EndDate := CalcDate('CM', "Posting Date");
-                    Validate("Repayment End Date");
-                    "Prorated Days" := EndDate - "Posting Date";
-                end;
+                Validate("Repayment End Date");
+                if Date2DMY("Posting Date", 1) > 5 then
+                    "Prorated Days" := EndDate - "Posting Date"
+                else
+                    "Prorated Days" := 0;
             end;
         }
         field(19; "Created By"; Code[100])
@@ -6785,19 +6854,26 @@ table 90052 "Teller Transactions"
         field(7; Amount; Decimal)
         {
             trigger OnValidate()
+            var
+                ObLnMgt: Codeunit "Loans Management";
+                SaccoJnl: Codeunit "Journal Management";
             begin
+                "Available Balance" := "Available Balance" - SaccoJnl.GetTransactionCharges("Charge Code", Amount);
+                //Message('Transaction Charges %1', FnGetTCharges());
                 if "Transaction Type" = "Transaction Type"::"Cash Withdrawal" then begin
                     if Amount > "Available Balance" then
-                        Error('You Can only transacto upto %1', "Available Balance");
+                        Error('You Can only transact upto %1', "Available Balance");
                 end;
+
+
             end;
         }
-        field(8; Teller; Code[20])
+        field(8; Teller; Code[100])
         {
             Editable = false;
             TableRelation = "Teller Setup";
         }
-        field(9; Till; Code[20])
+        field(9; Till; Code[50])
         {
             Editable = false;
             TableRelation = "Bank Account";
@@ -6915,6 +6991,27 @@ table 90052 "Teller Transactions"
         TestField(Posted, false);
     end;
 
+    procedure FnGetTCharges(): Decimal;
+    var
+        ChargeAount: Decimal;
+        ObjCharges: Record "Transaction Charges";
+        ObjCalcSchemes: Record "Transaction Calc. Scheme";
+        ObjSaccoSetup: Record "Sacco Setup";
+
+    begin
+        ChargeAount := 0;
+        ObjCalcSchemes.reset;
+        //ObjCalcSchemes.SetRange("Transaction Code","Charge Code");
+        ObjCalcSchemes.SetRange("Charge Code", "Charge Code");
+        if ObjCalcSchemes.FindSet() then begin
+            if ((Amount >= ObjCalcSchemes."Lower Limit") and (Amount <= ObjCalcSchemes."Upper Limit")) then
+                repeat
+                    ChargeAount += ObjCalcSchemes.Rate;
+                until ObjCalcSchemes.next = 0;
+
+        end;
+    end;
+
 }
 table 90053 "Loan Appraisal Parameters"
 {
@@ -6994,7 +7091,13 @@ table 90054 "Appraisal Accounts"
         }
         field(3; "Account No"; Code[20]) { }
         field(4; "Account Description"; Text[150]) { Editable = false; }
-        field(5; Balance; Decimal) { }
+        field(5; Balance; Decimal)
+        {
+            FieldClass = FlowField;
+            CalcFormula = - sum("Detailed Vendor Ledg. Entry".Amount where("Vendor No." = field("Account No")));
+            Editable = false;
+
+        }
         field(6; "Mulltipled Value"; Decimal) { }
     }
 
@@ -7240,9 +7343,9 @@ table 90057 "Loan Recoveries"
             DataClassification = ToBeClassified;
 
         }
-        field(2; "Recovery Type"; Option)
+        field(2; "Recovery Type"; Enum "Recovery Type")
         {
-            OptionMembers = Loan,Account,External;
+
         }
         field(3; "Recovery Code"; Code[20])
         {
@@ -7286,7 +7389,8 @@ table 90057 "Loan Recoveries"
                                     "Commission Account" := ProductFactory."Commission Account";
                                     LoanApplication1.CalcFields("Loan Balance");
                                     "Current Balance" := LoanApplication1."Loan Balance";
-                                    "Prorated Interest" := LoansMgt.GetProratedInterest(LoanApplication1."Application No", LoanApplication."Application Date");
+                                    //"Prorated Interest" := LoansMgt.GetProratedInterest(LoanApplication1."Application No", LoanApplication."Application Date");
+                                    Message('Application Date %1', LoanApplication."Application Date");
                                     Validate(Amount, ("Current Balance" + "Prorated Interest"));
                                 end;
                             end;
@@ -7333,6 +7437,7 @@ table 90057 "Loan Recoveries"
                                         LoanApplication1.CalcFields("Loan Balance");
                                         "Current Balance" := LoanApplication1."Loan Balance";
                                         "Prorated Interest" := LoansMgt.GetProratedInterest(LoanApplication1."Application No", OnlineLoanApplication."Application Date");
+
                                         Validate(Amount, ("Current Balance" + "Prorated Interest"));
                                     end;
                                 end;
@@ -7382,7 +7487,7 @@ table 90057 "Loan Recoveries"
                                     "Commission Account" := ProductFactory."Commission Account";
                                     LoanApplication1.CalcFields("Loan Balance");
                                     "Current Balance" := LoanApplication1."Loan Balance";
-                                    "Prorated Interest" := LoansMgt.GetProratedInterest(LoanApplication1."Application No", LoanApplication."Application Date");
+                                    //"Prorated Interest" := LoansMgt.GetProratedInterest(LoanApplication1."Application No", LoanApplication."Application Date");
                                     Validate(Amount, ("Current Balance" + "Prorated Interest"));
                                 end;
                             end;
@@ -7437,7 +7542,7 @@ table 90057 "Loan Recoveries"
         }
         field(4; "Recovery Description"; Text[150])
         {
-            Editable = False;
+            Editable = true;
         }
         field(5; Amount; Decimal)
         {
@@ -7899,7 +8004,10 @@ table 90060 "ATM Application"
         {
             Editable = false;
         }
-        Field(27; "Transaction Code"; Code[20]) { tablerelation = "SACCO Transaction Types"; }
+        Field(27; "Transaction Code"; Code[20])
+        {
+            TableRelation = "SACCO Transaction Types";
+        }
     }
 
     keys
@@ -7918,8 +8026,8 @@ table 90060 "ATM Application"
     begin
 
         SaccoSetup.get;
-        SaccoSetup.TestField("Member Exit Nos");
-        "Application No" := NoSeries.GetNextNo(SaccoSetup."Member Exit Nos", Today, true);
+        SaccoSetup.TestField("ATM Application Nos");
+        "Application No" := NoSeries.GetNextNo(SaccoSetup."ATM Application Nos", Today, true);
         "Application Date" := Today;
         "Created By" := UserId;
         "Last Updated By" := UserId;
@@ -9170,8 +9278,8 @@ table 90075 "Online Guarantor Requests"
                 Self := 0;
                 NonSelf := 0;
                 LoansMgt.GetSelfGuaranteeAmount("Member No", Self, NonSelf);
-                "Available Self Guarantee" := Self;
-                "Available Deposits" := NonSelf;
+                "Available Self Guarantee" := LoansMgt.GetSelfGuaranteeEligibility("Member No");
+                "Available Deposits" := LoansMgt.GetNonSelfGuaranteeEligibility("Member No");
                 //     LoansManagement.ValidateOnlineMemberGuarantee(Rec);
                 //     "Guarantor Value" := LoansManagement.GetGuarantorValue("Member No");
             end;
@@ -11763,8 +11871,12 @@ table 90108 "Account Openning"
             TableRelation = Members;
             trigger OnValidate()
             begin
-                if Member.get("Member No") then
+                if Member.get("Member No") then begin
                     "Member Name" := Member."Full Name";
+                    Member.CalcFields("Member Image", "Member Signature");
+                    "Member Image" := Member."Member Image";
+                    "Member Signature" := Member."Member Signature";
+                end;
             end;
         }
         field(3; "Member Name"; Text[150])
@@ -11830,6 +11942,16 @@ table 90108 "Account Openning"
         {
             Editable = false;
         }
+        field(19; "Member Image"; blob)
+        {
+            Subtype = Bitmap;
+        }
+        field(20; "Member Signature"; blob)
+        {
+            Subtype = Bitmap;
+        }
+
+
     }
 
     keys
@@ -12066,25 +12188,28 @@ table 90111 "Checkoff Variation Header"
         LoanApplication.SetFilter("Loan Balance", '>0');
         LoanApplication.SetRange("Member No.", "Member No");
         if LoanApplication.FindSet() then begin
-            LoanApplication.CalcFields("Loan Balance");//Fred
             repeat
-                CheckoffVariationLines.Init();
-                CheckoffVariationLines."Document No" := "Document No";
-                CheckoffVariationLines."Acount Code" := LoanApplication."Product Code";
-                CheckoffVariationLines.Description := LoanApplication."Product Description";
-                LoanApplication.CalcFields("Monthly Inistallment", "Monthly Principle");
-                if LoanApplication."Rescheduled Installment" <> 0 then
-                    CheckoffVariationLines."Current Contribution" := LoanApplication."Rescheduled Installment"
-                else
-                    if LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::Amortised then
-                        CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Inistallment"
-                    else
-                        CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Principle";
-                CheckoffVariationLines."Account Balance" := LoanApplication."Loan Balance";//Fred
-                CheckoffVariationLines."Application No." := LoanApplication."Application No";//Fred
-                CheckoffVariationLines."Loan Account" := LoanApplication."Loan Account";//Fred
-                CheckoffVariationLines.Insert(true);
-            // CheckoffVariationLines.Modify();
+                LoanApplication.CalcFields("Loan Balance");//Fred
+                if Products.Get(LoanApplication."Product Code") then begin
+                    if Products."Checkoff Product" then begin
+                        CheckoffVariationLines.Init();
+                        CheckoffVariationLines."Document No" := "Document No";
+                        CheckoffVariationLines."Acount Code" := LoanApplication."Product Code";
+                        CheckoffVariationLines.Description := LoanApplication."Product Description";
+                        LoanApplication.CalcFields("Monthly Inistallment", "Monthly Principle");
+                        if LoanApplication."Rescheduled Installment" <> 0 then
+                            CheckoffVariationLines."Current Contribution" := LoanApplication."Rescheduled Installment"
+                        else
+                            if LoanApplication."Interest Repayment Method" = LoanApplication."Interest Repayment Method"::Amortised then
+                                CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Inistallment"
+                            else
+                                CheckoffVariationLines."Current Contribution" := LoanApplication."Monthly Principle";
+                        CheckoffVariationLines."Account Balance" := LoanApplication."Loan Balance";//Fred
+                        CheckoffVariationLines."Application No." := LoanApplication."Application No";//Fred
+                        CheckoffVariationLines."Loan Account" := LoanApplication."Loan Account";//Fred
+                        CheckoffVariationLines.Insert(true);
+                    end;
+                end;
             until LoanApplication.Next() = 0;
         end;
         Subscriptions.Reset();
@@ -12108,6 +12233,7 @@ table 90111 "Checkoff Variation Header"
         end;
         Products.Reset();
         Products.SetFilter("Account Class", '%1|%2', Products."Account Class"::Collections, Products."Account Class"::NWD);
+        Products.SetRange("Checkoff Product", true);
         if Products.FindSet() then begin
             repeat
                 if CheckoffVariationLines.Get("Document No", Products.Code) = false then begin
@@ -12197,7 +12323,7 @@ table 90112 "Checkoff Variation Lines"
                 end;
                 //Limit users to enter only New Contribution >=3000 if Deposits
                 ObjSaccoSetup.get();
-                if ProductFactory.Get('S03') then begin
+                if ProductFactory.Code = 'S03' then begin
                     if "New Contribution" < ObjSaccoSetup."Minimum Deposit Cont." then
                         Error(DepositErrMsg, ObjSaccoSetup."Minimum Deposit Cont.");
                 end;
@@ -12369,6 +12495,7 @@ table 90114 "Mobile Applications"
                 "Full Name" := Members."Full Name";
                 "Phone No" := Members."Mobile Phone No.";
                 "ID No" := Members."National ID No";
+                "Mobile Transacting No" := Members."Mobile Transacting No";
             end;
         }
         field(3; "Full Name"; Text[150])
@@ -12417,6 +12544,7 @@ table 90114 "Mobile Applications"
         {
             Editable = false;
         }
+        field(15; "Mobile Transacting No"; Code[20]) { }
     }
 
     keys
@@ -12496,6 +12624,7 @@ table 90115 "Mobile Members"
             FieldClass = FlowField;
             CalcFormula = count("Mobile Member Ledger" where("Member No" = field("Member No")));
         }
+        field(12; "Mobile Transacting No"; Code[20]) { }
     }
 
     keys
