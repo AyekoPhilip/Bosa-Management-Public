@@ -26,11 +26,6 @@ tableextension 90009 VendorExt extends Vendor
         }
         field(90002; "Account Type"; Enum "Vendor Account Type")
         {
-<<<<<<< HEAD
-            OptionMembers = Supplier,Sacco,Loan,ServiceProvider,EFT;
-            OptionCaption = 'Supplier,Sacco,Loan,Service Provider,EFT';
-=======
->>>>>>> 656559d (New Commit by 1010)
         }
         field(90003; Status; Option)
         {
