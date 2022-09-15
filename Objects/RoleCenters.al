@@ -452,6 +452,25 @@ page 95000 "Credit Clerk"
                 }
                 group("Periodic Activities")
                 {
+                    group("Periodic Tasks")
+                    {
+                        action("Recover Mobi Loans")
+                        {
+                            RunObject = report "Recover Mobi Loans - Q";
+                        }
+                        action("Send Mobi Loan Reminders")
+                        {
+                            RunObject = report "Send Mobi Loans Reminder - Q";
+                        }
+                        action("Transfer Share Capital")
+                        {
+                            RunObject = report "Transfer Share Capital -Q";
+                        }
+                        action("Recover Entrance Fee")
+                        {
+                            RunObject = report "Recover Entrance Fee - Q";
+                        }
+                    }
                     group("Checkoff Variation")
                     {
                         action("Online Checkoff Variations")
@@ -592,6 +611,10 @@ page 95000 "Credit Clerk"
                 {
                     group(Loans)
                     {
+                        action("SMS Ledger")
+                        {
+                            RunObject = page "SMS Ledger";
+                        }
                         action("New Loan Applications")
                         {
                             RunObject = page "New Online Loans";
@@ -986,6 +1009,34 @@ page 95000 "Credit Clerk"
                             RunObject = report "Loan Defaulters";
                         }
                     }
+                    action("Loan Checkoff Analysis")
+                    {
+                        RunObject = report "Loan Checkoff Analysis";
+                    }
+                    action("Loan Pro-rata Interest")
+                    {
+                        RunObject = report "Loan Pro-rata Interest";
+                    }
+                    action("OverPaid Principle")
+                    {
+                        RunObject = report "OverPaid Principle";
+                    }
+                    action("Non_Guaranteed Loans")
+                    {
+                        RunObject = report "Non_Guaranteed Loans";
+                    }
+                    action("Membership Statistics")
+                    {
+                        RunObject = report "Membership Statistics";
+                    }
+                    action("Loan Statistics")
+                    {
+                        RunObject = report "Loan Statistics";
+                    }
+                    action("Collateral Register v2")
+                    {
+                        RunObject = report "Collateral Register";
+                    }
                     action("Generate Defaulters ")
                     {
                         Image = AbsenceCategory;
@@ -1030,6 +1081,11 @@ page 95000 "Credit Clerk"
                     {
                         Image = PostApplication;
                         RunObject = report "Underpaid Principle";
+                    }
+                    action("Double Loans")
+                    {
+                        Image = PostApplication;
+                        RunObject = report "Double Loans";
                     }
                 }
                 action("Progression Report")

@@ -13,9 +13,12 @@
             "authentication": "UserPassword",*/
             //Ushuru Server - UAT                     
             "server": "http://192.168.0.116",
+            //"server": "http://192.168.0.15",
             "port": 9049,      
             "serverInstance": "BC180",    
             "authentication": "UserPassword",
+            
+            
             //**** ITL Server
             /*"server": "http://185.213.27.138",
             "port": 7049,
@@ -25,7 +28,8 @@
             //LocalHost
             //"authentication": "Windows",    
             //"server": "http://localhost",  
-            //"serverInstance": "BC180",  
+            //"serverInstance": "BC180", 
+             
             "environmentType": "OnPrem",            
             "breakOnError": true,
             "launchBrowser": true,

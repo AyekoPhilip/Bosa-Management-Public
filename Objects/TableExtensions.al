@@ -24,9 +24,8 @@ tableextension 90009 VendorExt extends Vendor
             DataClassification = ToBeClassified;
             TableRelation = members;
         }
-        field(90002; "Account Type"; Option)
+        field(90002; "Account Type"; Enum "Vendor Account Type")
         {
-            OptionMembers = "Supplier","Sacco","Loan","Service Provider","EFT";
         }
         field(90003; Status; Option)
         {
@@ -294,6 +293,17 @@ tableextension 90019 "BOSA_User Setup Ext." extends "User Setup"
     {
         // Add changes to table fields here
         field(90001; "View Protected Account"; Boolean) { }
+        field(90002; "Current Session"; Integer) { }
+        field(90003; "Global Dimension 1 Code"; code[20])
+        {
+            CaptionClass = '1,1,1';
+            TableRelation = "Dimension Value".Code WHERE("Global Dimension No." = CONST(1));
+        }
+        field(90004; "Global Dimension 2 Code"; code[20])
+        {
+            CaptionClass = '1,1,2';
+            TableRelation = "Dimension Value".Code WHERE("Global Dimension No." = CONST(2));
+        }
     }
 
     var

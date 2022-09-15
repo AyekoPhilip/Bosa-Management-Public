@@ -1,7 +1,7 @@
 {
   "id": "821bae46-940a-4c8a-a987-96dcc8babd71",
   "name": "Bosa Management",
-  "publisher": "Default publisher",
+  "publisher": "Default Publisher",
   "version": "1.0.0.0",
   "brief": "",
   "description": "",
@@ -14,12 +14,14 @@
   "screenshots": [],
   "platform": "1.0.0.0",
   "application": "18.0.0.0",
-  "runtime": "7.0",
-  "target": "OnPrem",
   "idRanges": [
     {
-      "from": 90000,
+      "from": 1,
       "to": 99999
     }
-  ]
+  ], 
+  "showMyCode": true,
+  "runtime": "7.0",
+  "target": "OnPrem"
+
 }

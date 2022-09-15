@@ -105,7 +105,7 @@ pageextension 90003 "Vendor List Ext." extends "Vendor List"
     trigger OnOpenPage()
     begin
         Rec.FilterGroup(2);
-        Rec.SetRange("Account Type", Rec."Account Type"::"Supplier");
+        Rec.SetRange("Account Type", Rec."Account Type"::Supplier);
         Rec.FilterGroup(0);
     end;
 
@@ -234,12 +234,25 @@ pageextension 90010 "BOSA_User Setup Ext" extends "User Setup"
         addafter("Register Time")
         {
             field("View Protected Account"; Rec."View Protected Account") { }
+            field("Current Session"; "Current Session") { }
+            field("Global Dimension 1 Code"; "Global Dimension 1 Code") { }
+            field("Global Dimension 2 Code"; "Global Dimension 2 Code") { }
         }
     }
 
     actions
     {
         // Add changes to page actions here
+        addfirst(Navigation)
+        {
+            action("BCRQ Setup")
+            {
+                Promoted = true;
+                Image = StepOver;
+                RunObject = page "BCRQ Setup";
+                RunPageLink = "User ID" = field("User ID");
+            }
+        }
     }
 
     var
